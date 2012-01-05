@@ -20,13 +20,21 @@
 #include <linux/mm.h>
 #include <linux/proc_fs.h>
 #include <asm/highmem.h>
+#include <asm/fixmap.h>
 #include <linux/spinlock.h>
 
-#define RSRVD_PHYS_ADDR1    0x9C000000 /* picked from fwram */
+#define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
+#define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v04Jan2012_2110"
+#define LBHKVC_VERSION "v05Jan2012_1257"
 
 static DEFINE_SPINLOCK(my_lock);
+
+#define S2S_BUFSIZE (32*1024)
+#define O2O_BUFSIZE (32*1024)
+
+char s2s_buf[S2S_BUFSIZE];
+char o2o_buf[O2O_BUFSIZE];
 
 static s32 lbhkvc_mmap(struct file *f, struct vm_area_struct *v);
 
@@ -40,10 +48,51 @@ static struct miscdevice lbhkvc_dev = {
 	&lbhkvc_fops
 };
 
+static void dump_kernel_mm(void)
+{
+	long iTotalMem = 1024*1024*1024;
+
+	printk(KERN_INFO "INFO: iTotalMem 0x%lx (Hardwired) \n",
+				iTotalMem);
+	printk(KERN_INFO "INFO: PAGE_SHIFT %d ie %d Page Size on this target \n",
+				PAGE_SHIFT,0x1<<PAGE_SHIFT);
+	printk(KERN_INFO "INFO: PHYS_OFFSET P:0x%lx(D:0x%lx) Begining of Platform ram \n\n",
+				PHYS_OFFSET, virt_to_phys((void*)PHYS_OFFSET));
+
+	printk(KERN_INFO "INFO: TASK_SIZE V:0x%lx(D:0x%lx) End of userspace mapping \n",
+				TASK_SIZE, virt_to_phys((void*)TASK_SIZE));
+	printk(KERN_INFO "INFO: MODULES_VADDR V:0x%lx(D:0x%lx) Start address for Modules Space \n",
+				MODULES_VADDR, virt_to_phys((void*)MODULES_VADDR));
+	printk(KERN_INFO "INFO: MODULES_END V:0x%lx(D:0x%lx) End address for Modules Space \n",
+				MODULES_END, virt_to_phys((void*)MODULES_END));
+	printk(KERN_INFO "INFO: PKMAP_BASE V:0x%lx(?:0x%lx) Permanent kernal mappings \n",
+				PKMAP_BASE, virt_to_phys((void*)PKMAP_BASE));
+	printk(KERN_INFO "INFO: PAGE_OFFSET V:0x%lx(P:0x%lx) Kernel direct 1:1 map platform RamBeg \n",
+				PAGE_OFFSET, virt_to_phys((void*)PAGE_OFFSET));
+	printk(KERN_INFO "NOTE: PAGE_OFFSET P:addr above should match PHY_OFFSET P:addr\n");
+	printk(KERN_INFO "INFO: high_memory V:0x%p(P:0x%lx) Kernel direct 1:1 map platform RamEnd \n",
+				high_memory, virt_to_phys((void*)high_memory));
+	printk(KERN_INFO "INFO: VMALLOC_START V:0x%lx(D:0x%lx) vmalloc/ioremap space Begin \n",
+				VMALLOC_START, virt_to_phys((void*)VMALLOC_START));
+	printk(KERN_INFO "INFO: VMALLOC_END V:0x%lx(D:0x%lx) vmalloc/ioremap space End \n",
+				VMALLOC_END, virt_to_phys((void*)VMALLOC_END));
+
+	printk(KERN_INFO "INFO: FIXADDR_START V:0x%lx(D:0x%lx) fixmap space Begin \n",
+				FIXADDR_START, virt_to_phys((void*)FIXADDR_START));
+	printk(KERN_INFO "INFO: FIXADDR_TOP V:0x%lx(D:0x%lx) fixmap space End \n",
+				FIXADDR_TOP, virt_to_phys((void*)FIXADDR_TOP));
+}
+
+static void dump_mymem(void)
+{
+	printk(KERN_INFO "My s2s_buf V:0x%p\n",s2s_buf);
+	printk(KERN_INFO "My o2o_buf V:0x%p\n",o2o_buf);
+
+}
+
 static s32 __init lbhkvc_init(void)
 {
 	int ret;
-	long iTotalMem = 1024*1024*1024;
 	unsigned long flags;
 
 	ret = misc_register(&lbhkvc_dev);
@@ -52,19 +101,11 @@ static s32 __init lbhkvc_init(void)
 			LBHKVC_MINOR);
 		return ret;
 	}
-	spin_lock_irqsave(&my_lock,flags);
 	printk(KERN_INFO "LBHKVC driver " LBHKVC_VERSION "\n");
-	printk(KERN_INFO "INFO: Total memory is 			iTotalMem 0x%lx\n",iTotalMem);
-	printk(KERN_INFO "INFO: Page Size ???				PAGE_SHIFT %d ie %d\n",PAGE_SHIFT,0x1<<PAGE_SHIFT);
-	printk(KERN_INFO "INFO: Begining of Platform ram		PHYS_OFFSET 0x%lx(0x%lx)\n\n", PHYS_OFFSET, virt_to_phys((void*)PHYS_OFFSET));
-	printk(KERN_INFO "INFO: End of userspace mapping		TASK_SIZE 0x%lx(0x%lx)\n", TASK_SIZE, virt_to_phys((void*)TASK_SIZE));
-	printk(KERN_INFO "INFO: Start address for Modules Space 	MODULES_VADDR 0x%lx(0x%lx)\n", MODULES_VADDR, virt_to_phys((void*)MODULES_VADDR));
-	printk(KERN_INFO "INFO: End address for Modules Space 		MODULES_END 0x%lx(0x%lx)\n", MODULES_END, virt_to_phys((void*)MODULES_END));
-	printk(KERN_INFO "INFO: Permanent kernal mappings		PKMAP_BASE 0x%lx(0x%lx)\n", PKMAP_BASE, virt_to_phys((void*)PKMAP_BASE));
-	printk(KERN_INFO "INFO: Kernel direct 1:1 map platform RamBeg	PAGE_OFFSET 0x%lx(0x%lx)\n", PAGE_OFFSET, virt_to_phys((void*)PAGE_OFFSET));
-	printk(KERN_INFO "INFO: Kernel direct 1:1 map platform RamEnd	high_memory 0x%p(0x%lx)\n", high_memory, virt_to_phys((void*)high_memory));
-	printk(KERN_INFO "INFO: vmalloc/ioremap space Begin		VMALLOC_START 0x%lx(0x%lx)\n", VMALLOC_START, virt_to_phys((void*)VMALLOC_START));
-	printk(KERN_INFO "INFO: vmalloc/ioremap space End		VMALLOC_END 0x%lx(0x%lx)\n", VMALLOC_END, virt_to_phys((void*)VMALLOC_END));
+
+	spin_lock_irqsave(&my_lock,flags);
+	dump_kernel_mm();
+	dump_mymem();
 	spin_unlock_irqrestore(&my_lock,flags);
 	return 0;
 }
