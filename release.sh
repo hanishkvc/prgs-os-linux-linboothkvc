@@ -12,10 +12,14 @@ cd $rdir
 for i in *; do
 	echo $i
 	mv $i temp_9999
-	sed -e "s/hanishkvc/hkvc/" temp_9999 > $i
-	diff -ub temp_9999 $i | less
+	sed -e "s/hanis/hkvc/" temp_9999 > $i
+	diff -ub temp_9999 $i
+	if [[ "$?" != "0" ]]; then
+		diff -ub temp_9999 $i | less
+	fi
 done
 rm temp_9999
+grep -i "hanis" * | less
 cd ..
 zip -r $rdir.zip $rdir
 read -p "Press any key to remove $rdir"
