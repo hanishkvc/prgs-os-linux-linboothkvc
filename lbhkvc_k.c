@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v06Jan2012_1456
+ * v07Jan2012_0044
  * HKVC, GPL, 04Jan2012_2105
  *
  * Move to core CPU in the SMP setup 
@@ -27,17 +27,29 @@
 #include <asm/page.h>
 #include <linux/spinlock.h>
 
+#include "gen_utils.h"
+#include "uart_utils.h"
+
 #include "hkvc.dummy1.h"
+
 
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v06Jan2012_1452"
+#define LBHKVC_VERSION "v07Jan2012_0044"
 
 static DEFINE_SPINLOCK(main_lock);
 
 #define S2S_BUFSIZE (32*1024)
 #define O2O_BUFSIZE (32*1024)
+
+#define EXEC_TYPE_ALLOC 0
+#define EXEC_TYPE_FIXED 1
+static unsigned long mpExecType = 0;
+module_param(mpExecType, ulong, 0);
+
+static unsigned long mpFixedExecVAddr = 0xc0008000;
+module_param(mpFixedExecVAddr, ulong, 0);
 
 char s2s_simpbuf[S2S_BUFSIZE];
 char o2o_simpbuf[O2O_BUFSIZE];
@@ -59,6 +71,7 @@ static struct miscdevice lbhkvc_dev = {
 };
 
 /* Get those hidden kernel functions */
+/* Unable to find init_mm, have to check source deeper */
 int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = (void*)0xc00464bc;
 void (*kh_setup_mm_for_reboot)(char mode) = 0xc00469e8;
 void (*kh_cpu_v7_proc_fin)(void) = 0xc0048784;
@@ -234,18 +247,22 @@ void dump_mymem(void)
 /* Identified from kernel/machine_kexec.c and inturn looking at mm/proc-v7.S */
 void hkvc_kexec_minimal(unsigned long kpaddr)
 {
+	hkvc_uart_send("A1\n",3);
 	kh_cpu_v7_proc_fin();
+	hkvc_uart_send("A2\n",3);
 	kh_setup_mm_for_reboot(0);
+	hkvc_uart_send("A3\n",3);
 	//kh_cpu_v7_reset(kpaddr);
-	__asm__ ("mov pc,%0\n"
+	__asm__ ("mov r5,r5\n"
+		 "mov r5,r5\n"
+		 "mov pc,%0\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		:
 		: "r"(kpaddr)
-		:
-		 );
+		: );
 }
 EXPORT_SYMBOL(hkvc_kexec_minimal);
 
@@ -288,13 +305,6 @@ void hkvc_kexec_fixed(unsigned long kvaddr)
 }
 EXPORT_SYMBOL(hkvc_kexec_fixed);
 
-void hkvc_sleep(unsigned long cnt)
-{
-	volatile int i=0;
-	for(i=0; i<cnt; i++)
-		i = i;
-}
-
 static s32 __init lbhkvc_init(void)
 {
 	int ret;
@@ -307,14 +317,24 @@ static s32 __init lbhkvc_init(void)
 		return ret;
 	}
 	printk(KERN_INFO "LBHKVC driver " LBHKVC_VERSION "\n");
+	hkvc_uart_init();
+	hkvc_uart_send("ABCD\n",5);
+	printk(KERN_INFO "lbhkvc: cpu_possible_map = 0x%lx\n",*cpu_possible_map.bits);
+	printk(KERN_INFO "lbhkvc: cpu_online_map = 0x%lx\n",*cpu_online_map.bits);
 	printk(KERN_INFO "lbhkvc: smp_processor_id = %d\n",smp_processor_id());
 	printk(KERN_INFO "lbhkvc: hard_smp_processor_id = %d\n",hard_smp_processor_id());
-	hkvc_sleep(100000);
+	hkvc_sleep(0x20000000);
 
 	printk(KERN_INFO "lbhkvc: Enter hkvc_kexec\n");
-	kh_disable_nonboot_cpus();
-	//hkvc_kexec_fixed(0xc0008000);
-	hkvc_kexec_alloc();
+	ret = kh_disable_nonboot_cpus();
+	if (ret < 0) {
+		printk(KERN_ERR "lbhkvc: disable_nonboot_cpus FAILED with %d(0x%x)\n", ret, ret);
+		return 1;
+	}
+	if(mpExecType == EXEC_TYPE_FIXED)
+		hkvc_kexec_fixed(mpFixedExecVAddr);
+	else
+		hkvc_kexec_alloc();
 	printk(KERN_INFO "lbhkvc: Left hkvc_kexec - WILL BE SURPRISED\n");
 
 	dump_kernel_mm();
