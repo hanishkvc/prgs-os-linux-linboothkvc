@@ -9,7 +9,8 @@ echo "Using KERNEL_DIR: $KERPATH"
 echo "Remember to do atleast on kernel source"
 echo "cp arch/arm/configs/android_4430BN_defconfig .config"
 echo "make CROSS_COMPILE=arm-eabi- ARCH=arm oldconfig"
-echo " make CROSS_COMPILE=arm-eabi- ARCH=arm scripts"
+echo "make CROSS_COMPILE=arm-eabi- ARCH=arm scripts"
+read -p "Press any key ..."
 
 if [[ $1 == "clean" ]]; then
 make KERNEL_DIR=$KERPATH ARCH=arm CROSS_COMPILE=$CGCC clean
