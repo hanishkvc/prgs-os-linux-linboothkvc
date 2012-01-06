@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
-#CGCC=arm-linux-gnueabi- 
-KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
-CGCC=arm-eabi-
+KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
+CGCC=arm-linux-gnueabi- 
+#KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
+#CGCC=arm-eabi-
 
 echo "Using KERNEL_DIR: $KERPATH"
 echo "Remember to do atleast on kernel source"
