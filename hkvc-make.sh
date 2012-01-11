@@ -4,22 +4,18 @@ DEVICE=DEVICE_BEAGLEXM
 #DEVICE=DEVICE_NOOKTAB
 
 if [[ $DEVICE == "DEVICE_BEAGLEXM" ]]; then
-
 KERPATH=/hanishkvc/external/Android/rowboat-gingerbread/kernel
 CGCC=arm-linux-gnueabi-
 #KERPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp/kernel
 #CGCC=arm-eabi-
-
 KERN_SYMS=$KERPATH/System.map
 fi
 
 if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
-
 KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
 CGCC=arm-linux-gnueabi- 
 #KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
 #CGCC=arm-eabi-
-
 KERN_SYMS=.target_kallsyms
 fi
 

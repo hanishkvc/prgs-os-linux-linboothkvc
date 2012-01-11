@@ -38,7 +38,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v07Jan2012_0044"
+#define LBHKVC_VERSION "v10Jan2012_2015"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -268,9 +268,14 @@ void dump_mymem(void)
 void hkvc_kexec_minimal(unsigned long kpaddr)
 {
 	hkvc_uart_send("A1\n",3);
+	__asm__("DSB \n");
+	__asm__("ISB \n");
 	kh_cpu_v7_proc_fin();
+	__asm__("ISB \n");
 	hkvc_uart_send("A2\n",3);
 	kh_setup_mm_for_reboot(0);
+	__asm__("DSB \n");
+	__asm__("ISB \n");
 	hkvc_uart_send("A3\n",3);
 	//kh_cpu_v7_reset(kpaddr);
 	__asm__ ("mov r5,r5\n"

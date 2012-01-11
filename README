@@ -1,7 +1,7 @@
 Readme
-v09Jan2012
+v10Jan2012
 HKVC
-----------------------
+-----------------------
 
 
 Omap3 Bootrom +
@@ -9,3 +9,10 @@ Omap3 Bootrom +
 0x40014000 - ?
 0x40014040 - Start Addr
 0x40014044 - Boot message structure
+
+
+Omap3730 linux kernel after proc_fin and setup_mm_for_reboot
+
+**** SCTLR
+IF MRC p15, 0, <Rt>, c1, c0, 0
+THEN Rt = 0x10c52c79
