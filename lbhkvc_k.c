@@ -32,6 +32,8 @@
 
 #include "hkvc.dummy1.h"
 
+#define ENABLE_TESTBEFORE 1
+#define ENABLE_PATCHUART 1
 
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
@@ -51,17 +53,22 @@ module_param(mpExecType, ulong, 0);
 static unsigned long mpFixedExecVAddr = 0xc0008000;
 module_param(mpFixedExecVAddr, ulong, 0);
 
+static int mpTestBefore = 0;
+module_param(mpTestBefore, int, 0);
+
+static int mpPatchUart1 = 0;
+module_param(mpPatchUart1, int, 0);
+
 char s2s_simpbuf[S2S_BUFSIZE];
 char o2o_simpbuf[O2O_BUFSIZE];
 char *o2o_km, *s2s_km;
 
-static int lbhkvc_ioctl(struct inode * inodep, struct file *filp, unsigned int command, unsigned long arg);
+static long lbhkvc_ioctl(struct file *filp, unsigned int command, unsigned long arg);
 static int lbhkvc_mmap(struct file *filp, struct vm_area_struct *v);
 
 static const struct file_operations lbhkvc_fops = {
-	.ioctl   = lbhkvc_ioctl,
-	.mmap    = lbhkvc_mmap,
-
+	.unlocked_ioctl   = lbhkvc_ioctl,
+	.mmap             = lbhkvc_mmap,
 };
 
 static struct miscdevice lbhkvc_dev = {
@@ -72,6 +79,8 @@ static struct miscdevice lbhkvc_dev = {
 
 /* Get those hidden kernel functions */
 /* Unable to find init_mm, have to check source deeper */
+#ifdef DEVICE_NOOKTAB
+#warning "************* kh_??? = 0x... For device NOOKTAB"
 int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = (void*)0xc00464bc;
 void (*kh_setup_mm_for_reboot)(char mode) = 0xc00469e8;
 void (*kh_cpu_v7_proc_fin)(void) = 0xc0048784;
@@ -79,6 +88,17 @@ void (*kh_cpu_v7_reset)(long) = 0xc00487c0;
 void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc00480f0;
 int (*kh_disable_nonboot_cpus)(void) = 0xc0083674;
 void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc00453d8;
+#else
+#warning "************ kh_??? = 0x... For device BEAGLEXM"
+int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = (void*)0xc004e4a4;
+void (*kh_setup_mm_for_reboot)(char mode) = 0xc004ecc8;
+void (*kh_cpu_v7_proc_fin)(void) = 0xc0050584;
+void (*kh_cpu_v7_reset)(long) = 0xc00505a0;
+void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc004ffdc;
+int (*kh_disable_nonboot_cpus)(void) = 0x0;
+void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc004db70;
+#endif
+
 
 int call_ioremap_page(unsigned long arg1, unsigned long arg2, void *arg3) 
 {
@@ -266,9 +286,22 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 }
 EXPORT_SYMBOL(hkvc_kexec_minimal);
 
+#ifdef ENABLE_TESTBEFORE
+
+void (*test_end_code)(void) = (void*) 0x0;
+
+#endif
+
 void hkvc_kexec_minimal_ext(unsigned long kpaddr, unsigned long kvaddr)
 {
         kh_v7_coherent_kern_range( kvaddr, kvaddr+PAGE_SIZE);
+#ifdef ENABLE_TESTBEFORE
+	if(mpTestBefore) {
+		printk(KERN_WARNING "Could CRASH\n");
+		test_end_code = (void*)kvaddr;
+		test_end_code();
+	}
+#endif
         printk(KERN_INFO "Bye!\n");
 	hkvc_kexec_minimal(kpaddr);
 }
@@ -309,6 +342,7 @@ static s32 __init lbhkvc_init(void)
 {
 	int ret;
 	unsigned long flags;
+	long *patchUartAddr;
 
 	ret = misc_register(&lbhkvc_dev);
 	if (ret) {
@@ -322,14 +356,28 @@ static s32 __init lbhkvc_init(void)
 	printk(KERN_INFO "lbhkvc: cpu_possible_map = 0x%lx\n",*cpu_possible_map.bits);
 	printk(KERN_INFO "lbhkvc: cpu_online_map = 0x%lx\n",*cpu_online_map.bits);
 	printk(KERN_INFO "lbhkvc: smp_processor_id = %d\n",smp_processor_id());
+#ifdef DEVICE_NOOKTAB
 	printk(KERN_INFO "lbhkvc: hard_smp_processor_id = %d\n",hard_smp_processor_id());
+#endif
 	hkvc_sleep(0x20000000);
 
+#ifdef ENABLE_PATCHUART
+	patchUartAddr = (long*)&hkvc_dummy1_bin[hkvc_dummy1_bin_len-4];
+	if (mpPatchUart1) {
+		printk(KERN_WARNING "lbhkvc: Patching ASSUMED Uartaddress at end of code to run\n");
+		printk(KERN_INFO "lbhkvc: Current UartAddress = 0x%lx\n",*patchUartAddr);
+		*patchUartAddr = (long)uartPort;
+		printk(KERN_INFO "lbhkvc: Patched UartAddress = 0x%lx\n",*patchUartAddr);
+	}
+#endif
+
 	printk(KERN_INFO "lbhkvc: Enter hkvc_kexec\n");
-	ret = kh_disable_nonboot_cpus();
-	if (ret < 0) {
-		printk(KERN_ERR "lbhkvc: disable_nonboot_cpus FAILED with %d(0x%x)\n", ret, ret);
-		return 1;
+	if(kh_disable_nonboot_cpus != NULL) {
+		ret = kh_disable_nonboot_cpus();
+		if (ret < 0) {
+			printk(KERN_ERR "lbhkvc: disable_nonboot_cpus FAILED with %d(0x%x)\n", ret, ret);
+			return 1;
+		}
 	}
 	if(mpExecType == EXEC_TYPE_FIXED)
 		hkvc_kexec_fixed(mpFixedExecVAddr);
@@ -346,7 +394,7 @@ static s32 __init lbhkvc_init(void)
 	return 0;
 }
 
-static int lbhkvc_ioctl(struct inode * inodep, struct file *filp, unsigned int command, unsigned long arg)
+static long lbhkvc_ioctl(struct file *filp, unsigned int command, unsigned long arg)
 {
 	return 0;
 }

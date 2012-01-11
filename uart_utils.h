@@ -12,14 +12,27 @@
 #define _HKVC_UART_UTILS_
 
 
+#define ENABLE_INSERTE_ONWAIT 1
+
+#ifdef DEVICE_NOOKTAB
 #define DEBUG_UART_PBASE	0x4806A000
-#define DEBUG_UART_VBASE	0x4806A000
+//#define DEBUG_UART_VBASE	0x4806A000
+#elif DEVICE_BEAGLEXM
+#define DEBUG_UART_PBASE	0x49020000
+#else
+#error "No VALID DEVICE defined"
+#endif
 #define TX_BUSY_MASK (UART_LSR_TEMT | UART_LSR_THRE)
 
 
 #define HKVC_UART_LSR (UART_LSR<<2)
 #define HKVC_UART_IER (UART_IER<<2)
 #define HKVC_UART_TX (UART_TX<<2)
+
+#define UARTWAIT_INSERTECNT 100
+#define UARTWAIT_MAXCNT 200
+
+extern void __iomem *uartPort;
 
 void hkvc_uart_init(void);
 void hkvc_uart_wait_on_tx_busy(void);

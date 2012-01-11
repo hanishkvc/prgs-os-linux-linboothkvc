@@ -16,25 +16,30 @@
 #include "uart_utils.h"
 #include "gen_utils.h"
 
-void __iomem *uartport = (void *)0;
+void __iomem *uartPort = (void *)0;
 
 void hkvc_uart_init(void)
 {
-	uartport = ioremap_nocache(DEBUG_UART_PBASE,32);
-	BUG_ON(!uartport);
-	printk(KERN_INFO "lbhkvc: debug uart port base = 0x%p\n",uartport);
+	uartPort = ioremap_nocache(DEBUG_UART_PBASE,32);
+	BUG_ON(!uartPort);
+	printk(KERN_INFO "lbhkvc: debug uart port base = 0x%p\n",uartPort);
 }
 
 void hkvc_uart_wait_on_tx_busy(void)
 {
 	int cnt = 0;
-	while(readw(uartport+HKVC_UART_LSR) & TX_BUSY_MASK) {
-		if(cnt > 100)
+	while(readw(uartPort+HKVC_UART_LSR) & TX_BUSY_MASK) {
+#ifdef ENABLE_INSERTE_ONWAIT
+		if(cnt == UARTWAIT_INSERTECNT) {
+			writew('E',uartPort+HKVC_UART_TX);
+		}
+#endif
+		if(cnt > UARTWAIT_MAXCNT) {
 			break;
+		}
 		hkvc_sleep(0x10);
 		cnt += 1;
 	}
-
 }
 
 void hkvc_uart_send(char *buf, int len)
@@ -43,14 +48,14 @@ void hkvc_uart_send(char *buf, int len)
 	int i;
 
 	/* Disable interrupts, so that we dont impact other uart based logics much */
-	curIER = readw(uartport+HKVC_UART_IER);
-	writew(0,uartport+HKVC_UART_IER); 
+	curIER = readw(uartPort+HKVC_UART_IER);
+	writew(0,uartPort+HKVC_UART_IER);
 
 	for(i=0; i<len; i++) {
 		hkvc_uart_wait_on_tx_busy();
-		writew(buf[i],uartport+HKVC_UART_TX);
+		writew(buf[i],uartPort+HKVC_UART_TX);
 	}
 	hkvc_uart_wait_on_tx_busy();
-	writew(curIER,uartport+HKVC_UART_IER);
+	writew(curIER,uartPort+HKVC_UART_IER);
 }
 
