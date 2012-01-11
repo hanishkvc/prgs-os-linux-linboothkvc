@@ -1,0 +1,11 @@
+Readme
+v09Jan2012
+HKVC
+----------------------
+
+
+Omap3 Bootrom +
+--------------------
+0x40014000 - ?
+0x40014040 - Start Addr
+0x40014044 - Boot message structure
