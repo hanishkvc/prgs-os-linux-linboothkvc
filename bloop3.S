@@ -44,5 +44,6 @@ _start:
 	b _start
 
 uartBase:
-	.long 0x4806A000
+#	.long 0x4806A000
+	.long 0x49020000
 

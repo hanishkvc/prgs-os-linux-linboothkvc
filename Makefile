@@ -1,8 +1,10 @@
 #
 # Makefile for linux kernel module.
 #
-obj-m += lbhkvc_km.o
-lbhkvc_km-objs := lbhkvc_k.o gen_utils.o uart_utils.o
+obj-m += lbhkvc_km_$(DEVICE).o
+lbhkvc_km_$(DEVICE)-objs := lbhkvc_k.o gen_utils.o uart_utils.o
+CFLAGS_lbhkvc_k.o += -D$(DEVICE)
+CFLAGS_uart_utils.o += -D$(DEVICE)
 
 all:
 	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) modules
