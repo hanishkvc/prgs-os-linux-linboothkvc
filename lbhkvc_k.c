@@ -282,7 +282,7 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 		 "mov r5,r5\n"
 		:
 		: "r"(kpaddr)
-		: );
+		);
 }
 EXPORT_SYMBOL(hkvc_kexec_minimal);
 
