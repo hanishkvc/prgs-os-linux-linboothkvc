@@ -6,8 +6,8 @@ lbhkvc_km_$(DEVICE)-objs := lbhkvc_k.o gen_utils.o uart_utils.o
 CFLAGS_lbhkvc_k.o += -D$(DEVICE)
 CFLAGS_uart_utils.o += -D$(DEVICE)
 
-#CROSS_COMPILE=arm-linux-gnueabi-
-CROSS_COMPILE=arm-eabi-
+CROSS_COMPILE=arm-linux-gnueabi-
+#CROSS_COMPILE=arm-eabi-
 
 all:
 	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) modules
@@ -41,7 +41,7 @@ probe1: probe1.S
 asmp1: probe1 asm
 
 asm:
-	$(CROSS_COMPILE)gcc -nostdlib -march=armv7-a -o dummy1 dummy1.S -Ttext=0
+	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o dummy1 dummy1.S -Ttext=0
 	$(CROSS_COMPILE)objdump -d dummy1
 	$(CROSS_COMPILE)objcopy -O binary -j .text dummy1 hkvc.dummy1.bin
 	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.dummy1.bin
@@ -50,4 +50,4 @@ asm:
 dump:
 	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.dummy1.bin | less
 	$(CROSS_COMPILE)objdump -d lbhkvc_km.ko | less
-	
+

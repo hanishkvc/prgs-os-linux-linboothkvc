@@ -25,10 +25,10 @@ _start:
 	mov r0,r0
 	bic r7,r7,#1
 	mcr p15, 0, r7, c1, c0, 0
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
 	ISB
-	mov r0,r0
-	mov r0,r0
-	mov r0,r0
 	mov r0,r0
 	mrc p15, 0, r8, c1, c0, 0
 
@@ -63,6 +63,9 @@ _start:
 	b _start
 
 uartBase:
-#	.long 0x4806A000
+#ifdef DEVICE_NOOKTAB
+	.long 0x4806A000
+#else
 	.long 0x49020000
+#endif
 
