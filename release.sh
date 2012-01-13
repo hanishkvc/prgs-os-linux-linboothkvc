@@ -11,7 +11,7 @@ cp -v *.* $rdir/
 cp -v Makefile $rdir/
 
 if [[ $1 != "internal" ]]; then
-echo "INFO: Shorten Developer full name..."
+echo "INFO: EXTERNAL release - Shorten Developer full name..."
 cd $rdir
 for i in *; do
 	echo $i
@@ -23,10 +23,11 @@ for i in *; do
 	fi
 done
 rm temp_9999
+rm -rf release.sh
 grep -i "hanis" * | less
 cd ..
 else
-echo "INFO: Developer full name not shortened"
+echo "INFO: INTERNAL release - Developer full name not shortened"
 fi
 
 zip -r $rdir.zip $rdir
