@@ -5,8 +5,9 @@
 # HKVC, GPL, Jan2012
 #
 
-ANDPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp
-#ANDPATH=/hanishkvc/external/Android/rowboat-gingerbread
+
+#ANDPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp
+ANDPATH=/hanishkvc/external/Android/rowboat-gingerbread
 
 
 if [[ $# < 2 ]]; then
@@ -83,6 +84,12 @@ if [[ "$mode" == "copy" ]] || [[ "$mode" == "all" ]]; then
 	cp /tmp/boot.scr /mnt/d1/
 	ls -l /mnt/d1/
 	read -p "Hope you have copied all required things to $1 ..."
+	if [[ $mode == "all" ]]; then
+		pushd /mnt/d1
+		echo "Update 1st partition if required, else exit"
+		bash
+		popd
+	fi
 fi
 
 if [[ "$mode" == "umount" ]] || [[ "$mode" == "all" ]]; then
@@ -92,6 +99,8 @@ if [[ "$mode" == "umount" ]] || [[ "$mode" == "all" ]]; then
 fi
 
 if [[ "$mode" == "run" ]] || [[ "$modeext" == "run" ]]; then
-	qemu-system-arm -M beaglexm -clock unix -sd $1 -nographic -serial pty -serial pty -serial pty -serial pty
+	#qemu-system-arm -M beaglexm -clock unix -sd $1 -nographic -serial pty -serial pty -serial pty -serial pty
+	#qemu-system-arm -M beaglexm -sdl -clock unix -sd $1
+	qemu-system-arm -M beaglexm -sdl -clock unix -sd $1 -s
 fi
 

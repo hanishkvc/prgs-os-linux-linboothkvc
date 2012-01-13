@@ -3,20 +3,33 @@
 DEVICE=DEVICE_BEAGLEXM
 #DEVICE=DEVICE_NOOKTAB
 
+LOCATION=HOME
+#LOCATION=OFFICE
+
+echo "DEVICE: " $DEVICE
+echo "LOCATION: " $LOCATION
+read -p "Hope this is fine..."
+
 if [[ $DEVICE == "DEVICE_BEAGLEXM" ]]; then
-KERPATH=/hanishkvc/external/Android/rowboat-gingerbread/kernel
-CGCC=arm-linux-gnueabi-
-#KERPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp/kernel
-#CGCC=arm-eabi-
-KERN_SYMS=$KERPATH/System.map
+	if [[ $LOCATION == "HOME" ]]; then
+	KERPATH=/hanishkvc/external/Android/rowboat-gingerbread/kernel
+	CGCC=arm-linux-gnueabi-
+	else
+	KERPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp/kernel
+	CGCC=arm-eabi-
+	fi
+	KERN_SYMS=$KERPATH/System.map
 fi
 
 if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
-KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
-CGCC=arm-linux-gnueabi- 
-#KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
-#CGCC=arm-eabi-
-KERN_SYMS=.target_kallsyms
+	if [[ $LOCATION == "HOME" ]]; then
+	KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
+	CGCC=arm-linux-gnueabi-
+	else
+	KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
+	CGCC=arm-eabi-
+	fi
+	KERN_SYMS=.target_kallsyms
 fi
 
 
@@ -45,6 +58,19 @@ cat $KERN_SYMS | grep "cpu_v7_reset"
 cat $KERN_SYMS | grep "v7_coherent_kern_range"
 cat $KERN_SYMS | grep "disable_nonboot_cpus"
 cat $KERN_SYMS | grep "show_pte"
+
+elif [[ $1 == "asm" ]]; then
+make DEVICE=$DEVICE asmp1
+
+elif [[ $1 == "install" ]]; then
+DEVICE=$DEVICE ./install.sh
+
+elif [[ $1 == "uuencode" ]]; then
+uuencode lbhkvc_km_$DEVICE.ko lbhkvc_km_$DEVICE.ko > lbhkvc_km.ko.uu
+mv lbhkvc_km.ko.uu /tmp/send.uu
+echo "On target use busybox rx recv.uu "
+echo "On PC send send.uu using minicom's xmodem protocol"
+echo "followed by busybox uudecode recv.uu on target"
 
 else
 
