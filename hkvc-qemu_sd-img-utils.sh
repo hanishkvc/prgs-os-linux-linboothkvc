@@ -9,6 +9,9 @@
 #ANDPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp
 ANDPATH=/hanishkvc/external/Android/rowboat-gingerbread
 
+echo "Android path: " $ANDPATH
+read -p "Is above android path correct..."
+
 
 if [[ $# < 2 ]]; then
 	echo "USAGE: $0 sd_image_raw mode"
