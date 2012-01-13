@@ -26,14 +26,14 @@ _start:
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
-	sub r2,r2,#1
+	subs r2,r2,#1
 	bne 2b
 
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
-	sub r1,r1,#1
+	subs r1,r1,#1
 	bne 1b
 	
 	mov r0,r0

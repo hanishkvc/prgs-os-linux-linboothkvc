@@ -24,9 +24,9 @@ _start:
 # This loop waits till tx logic is ready by polling lsr 
 1:
 	ldr r2,[r1, #0x14]
-	sub r3,r3,#1
+	subs r3,r3,#1
 	beq 2f
-	and r2,#0x3
+	ands r2,#0x3
 	bne 1b
 2:
 	mov r3,#0x31
