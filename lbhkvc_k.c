@@ -34,13 +34,13 @@
 
 #define ENABLE_TESTBEFORE 1
 #define ENABLE_PATCHUART 1
-#define DISABLE_MMU_BEFORE_LEAVING 1
-//#undef DISABLE_MMU_BEFORE_LEAVING
+#define ENABLE_MMU_DISABLE_BEFORELEAVING 1
+//#undef ENABLE_MMU_DISABLE_BEFORELEAVING
 
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v11Jan2012_2255"
+#define LBHKVC_VERSION "v12Jan2012_1628"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -270,7 +270,9 @@ void dump_mymem(void)
 void hkvc_kexec_minimal(unsigned long kpaddr)
 {
 	unsigned long lTemp;
+	unsigned long flags;
 
+	spin_lock_irqsave(&main_lock,flags);
 	hkvc_uart_send("A1\n",3);
 	__asm__("DSB \n");
 	__asm__("ISB \n");
@@ -289,8 +291,8 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 	__asm__ ("mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
-#ifdef DISABLE_MMU_BEFORE_LEAVING
-#warning "********* ENABLED MMU Disable Before LEAVING\n"
+#ifdef ENABLE_MMU_DISABLE_BEFORELEAVING
+#warning "********* MMU Disabled Before LEAVING\n"
 		 "mrc p15, 0, r2, c1, c0, 0\n"
 		 "bic r2, r2, #1\n"
 		 "mrc p15, 0, r2, c1, c0, 0\n"
@@ -298,7 +300,7 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 		 "ISB \n"
 		 "mov r5,r5\n"
 #else
-#warning "********* DISABLED MMU Disable Before LEAVING\n"
+#warning "********* MMU NOT Disabled Before LEAVING\n"
 #endif
 		 "mov r5,r5\n"
 		 "mov pc,%0\n"
@@ -345,6 +347,7 @@ void hkvc_kexec_alloc(void)
 		kpaddr = virt_to_phys(o2o_km);
 		printk(KERN_INFO "lbhkvc: kmalloced at V:0x%p P:0x%lx\n", o2o_km, kpaddr);
 	}
+	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
         memcpy(o2o_km, hkvc_dummy1_bin, hkvc_dummy1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
@@ -358,6 +361,7 @@ void hkvc_kexec_fixed(unsigned long kvaddr)
 	o2o_km = (void*)kvaddr;
 	kpaddr = virt_to_phys(o2o_km);
 	printk(KERN_INFO "lbhkvc: fixed kernel addr V:0x%p P:0x%lx\n", o2o_km, kpaddr);
+	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
         memcpy(o2o_km, hkvc_dummy1_bin, hkvc_dummy1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
@@ -385,7 +389,11 @@ static s32 __init lbhkvc_init(void)
 #ifdef DEVICE_NOOKTAB
 	printk(KERN_INFO "lbhkvc: hard_smp_processor_id = %d\n",hard_smp_processor_id());
 #endif
-	hkvc_sleep(0x20000000);
+#ifdef ENABLE_MMU_DISABLE_BEFORELEAVING
+	printk(KERN_INFO "lbhkvc: MMU will be disabled for switching to new env\n");
+#else
+	printk(KERN_INFO "lbhkvc: MMU will NOT be disabled for switching to new env\n");
+#endif
 
 #ifdef ENABLE_PATCHUART
 	patchUartAddr = (long*)&hkvc_dummy1_bin[hkvc_dummy1_bin_len-4];
