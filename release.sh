@@ -5,9 +5,13 @@ rdir=linboothkvc-v`date +%F-%H`
 echo $rdir
 read -p "Press any key to continue..."
 mkdir $rdir
-cp *.* $rdir/
-cp Makefile $rdir/
-#rm $rdir/release.sh
+
+echo "Files being copied..."
+cp -v *.* $rdir/
+cp -v Makefile $rdir/
+
+if [[ $1 != "internal" ]]; then
+echo "INFO: Shorten Developer full name..."
 cd $rdir
 for i in *; do
 	echo $i
@@ -21,6 +25,10 @@ done
 rm temp_9999
 grep -i "hanis" * | less
 cd ..
+else
+echo "INFO: Developer full name not shortened"
+fi
+
 zip -r $rdir.zip $rdir
 read -p "Press any key to remove $rdir"
 rm -rf $rdir
