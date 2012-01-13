@@ -17,11 +17,14 @@
 #ifdef DEVICE_NOOKTAB
 #define DEBUG_UART_PBASE	0x4806A000
 //#define DEBUG_UART_VBASE	0x4806A000
-#elif DEVICE_BEAGLEXM
+#else
+#ifdef DEVICE_BEAGLEXM
 #define DEBUG_UART_PBASE	0x49020000
 #else
 #error "No VALID DEVICE defined"
 #endif
+#endif
+
 #define TX_BUSY_MASK (UART_LSR_TEMT | UART_LSR_THRE)
 
 
@@ -37,6 +40,7 @@ extern void __iomem *uartPort;
 void hkvc_uart_init(void);
 void hkvc_uart_wait_on_tx_busy(void);
 void hkvc_uart_send(char *buf, int len);
+void hkvc_uart_send_hex(unsigned long lData);
 
 #endif
 

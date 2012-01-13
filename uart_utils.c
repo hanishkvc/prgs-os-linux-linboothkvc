@@ -59,3 +59,21 @@ void hkvc_uart_send(char *buf, int len)
 	writew(curIER,uartPort+HKVC_UART_IER);
 }
 
+static char tBin2Hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
+
+void hkvc_uart_send_hex(unsigned long lData)
+{
+	unsigned long lMask = 0x0000000F;
+	char sBuf[16];
+	int i;
+
+	sBuf[0] = '0';
+	sBuf[1] = 'x';
+	sBuf[10] = 0;
+	for(i = 9; i > 1; i--) {
+		sBuf[i]=tBin2Hex[lData&lMask];
+		lData >>= 4;
+	}
+	hkvc_uart_send(sBuf,10);
+}
+
