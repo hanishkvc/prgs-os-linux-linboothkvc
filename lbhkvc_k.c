@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v07Jan2012_0044
+ * v11Jan2012_2254
  * HKVC, GPL, 04Jan2012_2105
  *
  * Move to core CPU in the SMP setup 
@@ -34,11 +34,13 @@
 
 #define ENABLE_TESTBEFORE 1
 #define ENABLE_PATCHUART 1
+#define DISABLE_MMU_BEFORE_LEAVING 1
+//#undef DISABLE_MMU_BEFORE_LEAVING
 
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v10Jan2012_2015"
+#define LBHKVC_VERSION "v11Jan2012_2255"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -267,6 +269,8 @@ void dump_mymem(void)
 /* Identified from kernel/machine_kexec.c and inturn looking at mm/proc-v7.S */
 void hkvc_kexec_minimal(unsigned long kpaddr)
 {
+	unsigned long lTemp;
+
 	hkvc_uart_send("A1\n",3);
 	__asm__("DSB \n");
 	__asm__("ISB \n");
@@ -277,8 +281,25 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 	__asm__("DSB \n");
 	__asm__("ISB \n");
 	hkvc_uart_send("A3\n",3);
+	__asm__("mrc p15, 0, %0, c1, c0, 0\n"
+		:"=r"(lTemp)
+		);
+	hkvc_uart_send_hex(lTemp);
 	//kh_cpu_v7_reset(kpaddr);
 	__asm__ ("mov r5,r5\n"
+		 "mov r5,r5\n"
+		 "mov r5,r5\n"
+#ifdef DISABLE_MMU_BEFORE_LEAVING
+#warning "********* ENABLED MMU Disable Before LEAVING\n"
+		 "mrc p15, 0, r2, c1, c0, 0\n"
+		 "bic r2, r2, #1\n"
+		 "mrc p15, 0, r2, c1, c0, 0\n"
+		 "mov r5,r5\n"
+		 "ISB \n"
+		 "mov r5,r5\n"
+#else
+#warning "********* DISABLED MMU Disable Before LEAVING\n"
+#endif
 		 "mov r5,r5\n"
 		 "mov pc,%0\n"
 		 "mov r5,r5\n"

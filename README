@@ -15,4 +15,6 @@ Omap3730 linux kernel after proc_fin and setup_mm_for_reboot
 
 **** SCTLR
 IF MRC p15, 0, <Rt>, c1, c0, 0
-THEN Rt = 0x10c52c79
+THEN Rt = 0x10c52c79 (Beagle on Qemu)
+0x10C52C79 (NookTab)
+
