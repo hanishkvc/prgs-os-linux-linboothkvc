@@ -46,6 +46,10 @@ to above mentioned location and then run the following.
 ./hkvc-make asm
 ./hkvc-make
 
+OR if you only want to recompile the kernel module for your running kernel on qemu
+
+./hkvc-make
+
 Next copy the lbhkvc_km_DEVICE_BEAGLEXM.ko to qemu running linux (for which you
 compiled the kernel module). and insmod the kernel module and see the magic :-)
 
