@@ -40,6 +40,12 @@ probe1: probe1.S
 
 asmp1: probe1 asm
 
+probe2: probe2.S
+	rm dummy1.S
+	ln -s probe2.S dummy1.S
+
+asmp2: probe2 asm
+
 asm:
 	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o dummy1 dummy1.S -Ttext=0
 	$(CROSS_COMPILE)objdump -d dummy1
