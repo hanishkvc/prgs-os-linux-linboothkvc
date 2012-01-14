@@ -26,7 +26,7 @@ def get_bits(rVal, bitMsb, bitLen):
 
 
 def print_bits(sDesc, rVal, bitMsb, bitLen):
-	print "{0} {1}".format(sDesc,get_bits(rVal,bitMsb,bitLen))
+	print "{0} {1}".format(sDesc,hex(get_bits(rVal,bitMsb,bitLen)))
 
 
 if rName == "cp15.sctlr":
@@ -66,5 +66,48 @@ if rName == "cp15.sctlr":
 	print_bits( "00:00 - M (MMUEnable) = ", rVal, 0, 1)
 
 
+if rName == "cpsr":
+	print "Info for {0} = 0x{1} = bin({2})".format(rName,hex(rVal),bin(rVal))
+
+
+	print_bits( "31:31 - N(NegativeConditionFlag) = ", rVal,31,1)
+	print_bits( "30:30 - Z(ZeroConditionFlag) = ", rVal,30,1)
+	print_bits( "29:29 - C(CarryConditionFlag) = ", rVal,29,1)
+	print_bits( "28:28 - V(OverflowConditionFlag) = ", rVal,28,1)
+	print_bits( "27:27 - Q(CummulativeSaturationBit) = ", rVal,27,1)
+
+	print_bits( "26:25 - ThumbIT(1:0) = ", rVal,26,2)
+	print_bits( "24:24 - J(JazelleBit) = ", rVal,24,1)
+	print_bits( "23:20 - SBZP = ", rVal,23,4)
+	print_bits( "19:16 - GE(3:0)(GreaterThanOrEqual for SIMD) = 0x", rVal,19,4)
+	print_bits( "15:10 - ThumbIT(7:2) = ", rVal,15,6)
+
+	print_bits( "09:09 - E(EndiannessExecutionStateBit) = ", rVal,9,1)
+	print "NOTE: E = 0 = LittleEndian AND E = 1 = BitEndian"
+	print_bits( "08:08 - A(AsyncAbortMaskBit) = ", rVal, 8, 1)
+	print_bits( "07:07 - I(IrqMaskBit) = ", rVal, 7, 1)
+	print_bits( "06:06 - F(FiqMaskBit) = ", rVal, 6, 1)
+	print_bits( "05:05 - T(ThumbExecutionStateBit) = ", rVal, 5, 1)
+	print_bits( "04:00 - M(4:0)(ModeBit) = 0x", rVal, 4, 5)
+	mode=get_bits(rVal,4,5);
+	print "NOTE: M(4:0) means ..."
+	if(mode == 0x10):
+		print "MODE = User (PL0) "
+	if(mode == 0x11):
+		print "MODE = FIQ (PL1)"
+	if(mode == 0x12):
+		print "MODE = IRQ (PL1)"
+	if(mode == 0x13):
+		print "MODE = Supervisor(svc) (PL1)"
+	if(mode == 0x16):
+		print "MODE = Monitor (PL1) - Implemented with Security Extensions, State: Secure Only"
+	if(mode == 0x17):
+		print "MODE = Abort (PL1)"
+	if(mode == 0x1a):
+		print "MODE = Hyp (PL2) - Implemented with Virtualization Extensions, State: Non-secure Only"
+	if(mode == 0x1b):
+		print "MODE = Undefined[und] (PL1)"
+	if(mode == 0x1f):
+		print "MODE = System[sys] (PL1)"
 
 
