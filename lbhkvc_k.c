@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v11Jan2012_2254
+ * v14Jan2012_1110
  * HKVC, GPL, 04Jan2012_2105
  *
  * Move to core CPU in the SMP setup 
@@ -40,7 +40,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v12Jan2012_1628"
+#define LBHKVC_VERSION "v14Jan2012_1111"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -322,6 +322,7 @@ void (*test_end_code)(void) = (void*) 0x0;
 
 void hkvc_kexec_minimal_ext(unsigned long kpaddr, unsigned long kvaddr)
 {
+	hkvc_sleep(0x20000000);
         kh_v7_coherent_kern_range( kvaddr, kvaddr+PAGE_SIZE);
 #ifdef ENABLE_TESTBEFORE
 	if(mpTestBefore) {
@@ -347,7 +348,6 @@ void hkvc_kexec_alloc(void)
 		kpaddr = virt_to_phys(o2o_km);
 		printk(KERN_INFO "lbhkvc: kmalloced at V:0x%p P:0x%lx\n", o2o_km, kpaddr);
 	}
-	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
         memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
@@ -361,7 +361,6 @@ void hkvc_kexec_fixed(unsigned long kvaddr)
 	o2o_km = (void*)kvaddr;
 	kpaddr = virt_to_phys(o2o_km);
 	printk(KERN_INFO "lbhkvc: fixed kernel addr V:0x%p P:0x%lx\n", o2o_km, kpaddr);
-	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
         memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
@@ -395,6 +394,7 @@ static s32 __init lbhkvc_init(void)
 	printk(KERN_INFO "lbhkvc: MMU will NOT be disabled for switching to new env\n");
 #endif
 	printk(KERN_INFO "lbhkvc: hkvc_kexec_minimal addr = 0x%p\n",hkvc_kexec_minimal);
+	printk(KERN_INFO "lbhkvc: hkvc_nirvana1_bin addr = 0x%p\n",hkvc_nirvana1_bin);
 
 #ifdef ENABLE_PATCHUART
 	patchUartAddr = (long*)&hkvc_nirvana1_bin[hkvc_nirvana1_bin_len-4];
