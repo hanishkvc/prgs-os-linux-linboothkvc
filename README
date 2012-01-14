@@ -3,12 +3,42 @@ v14Jan2012_1010
 HKVC, GPL
 ---------------------
 
+>> 14Jan2012 <<
+
+Step1 [DONE]: Basic logic working in QEmu BeagleboardXM correctly now. Becaue Qemu doesn't
+similate Cache fully the bug related cache handling doesn't affect it. Qemu based snooping
+allowd me to identify my stupid mistake of not setting flags in my nirvana code samples.
+Also it helped me to run thro the boot flow as well as few other aspects of the shutdown
+process fully like identifying the MMU wasn't disabled by the kernel support routine
+(Now come on who wants to read thro the code carefully to identify these same, when one can
+experiment with the flow in qemu (lazzy me) :-) among others. My only peeve with Qemu
+is the way it maps the serial port to stdio or ptys rather indirectly arbitrarily to some
+extent.
 
 
-Bugs
------------
+Step2 [Next]: Next have to fix my known bugs and try on actual BeagleboardXM, now that
+I have got hold of xds100v2 yesterday and inturn able to debug Beagle using openocd.
+Rather put the required asm code directly instead of calling the hidden kernel functions.
+
+Step3 [After]: With the above two, most probably the code should run straight on Nook also
+as I have already taken care of shutting the 2nd proc down. Any additional SMP sync logic
+if any in chip to be looked at beyond the ISB and DSB syncing wrt current cpu.
+
+NOTE: jtag access as allowed me to confirm my suspisions wrt cache
+
+
+>> 08+Jan2012 <<
+Moving away from directly trying on NookTab to experiment with qemu initially to help
+debug the code easily (instead of requiring to experiment with uart prints).
+
+
+Bugs - TOFIX
+---------------
+
+>> 14Jan2012 <<
+
 The code to execute which is copied to kmalloced location, doesn't seem to be flushed
-to memory successfully always. This is also one serious issue affecting the kexec working
+to memory successfully always. This is also one serious issue affecting my kexec working
 currently. Have to look at cache flushing kernel function which I have used properly
 tomorrow and if required replace it or, have to move the code to copy to final location
 in my code in innermost kexec after it disables interrupts and calls DSB and ISB (just to
@@ -19,14 +49,21 @@ external symbols used in the module itself seems to be NOT fully flushed back in
 from cache sometimes.
 
 
-Omap3 Bootrom +
---------------------
-0x40014000 - ?
-0x40014040 - Start Addr
+
+MISC
+---------------
+
+>> 12Jan2012 <<
+
+***N*** Omap3 Bootrom
+0x40014000 - start of BootRom
+0x40014040 - Start Addr saved ?
 0x40014044 - Boot message structure
 
 
-Omap3730 linux kernel after proc_fin and setup_mm_for_reboot
+>> 13Jan2012 <<
+
+***N*** Omap3730 linux kernel after proc_fin and setup_mm_for_reboot
 
 **** SCTLR
 IF
