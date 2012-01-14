@@ -3,6 +3,7 @@
  * v14Jan2012_1110
  * HKVC, GPL, 04Jan2012_2105
  *
+ * NOTE: Partly Old comments below
  * Move to core CPU in the SMP setup 
  * - Disable the non_core/other CPU(s) in a SMP setup (Have to think thro further)
  * Disable interrupts

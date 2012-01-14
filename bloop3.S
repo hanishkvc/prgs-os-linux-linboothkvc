@@ -1,6 +1,9 @@
 # HKVCs simple busy loop with no exit for linboothkvc checking
-# v06Jan2012_1404
+# v12Jan2012_1404
 # HKVC, GPL, 05Jan2012_2049
+#
+# This also prints to uart
+# The stupid bug of forgetting to set flags in ALU ops fixed now
 #
 
 .text
