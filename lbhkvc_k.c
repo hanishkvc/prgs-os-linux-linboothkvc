@@ -30,7 +30,7 @@
 #include "gen_utils.h"
 #include "uart_utils.h"
 
-#include "hkvc.dummy1.h"
+#include "hkvc.nirvana1.h"
 
 #define ENABLE_TESTBEFORE 1
 #define ENABLE_PATCHUART 1
@@ -349,7 +349,7 @@ void hkvc_kexec_alloc(void)
 	}
 	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
-        memcpy(o2o_km, hkvc_dummy1_bin, hkvc_dummy1_bin_len);
+        memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
 }
 EXPORT_SYMBOL(hkvc_kexec_alloc);
@@ -363,7 +363,7 @@ void hkvc_kexec_fixed(unsigned long kvaddr)
 	printk(KERN_INFO "lbhkvc: fixed kernel addr V:0x%p P:0x%lx\n", o2o_km, kpaddr);
 	hkvc_sleep(0x20000000);
 	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
-        memcpy(o2o_km, hkvc_dummy1_bin, hkvc_dummy1_bin_len);
+        memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
 	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
 }
 EXPORT_SYMBOL(hkvc_kexec_fixed);
@@ -397,7 +397,7 @@ static s32 __init lbhkvc_init(void)
 	printk(KERN_INFO "lbhkvc: hkvc_kexec_minimal addr = 0x%p\n",hkvc_kexec_minimal);
 
 #ifdef ENABLE_PATCHUART
-	patchUartAddr = (long*)&hkvc_dummy1_bin[hkvc_dummy1_bin_len-4];
+	patchUartAddr = (long*)&hkvc_nirvana1_bin[hkvc_nirvana1_bin_len-4];
 	if (mpPatchUart1) {
 		printk(KERN_WARNING "lbhkvc: Patching ASSUMED Uartaddress at end of code to run\n");
 		printk(KERN_INFO "lbhkvc: Current UartAddress = 0x%lx\n",*patchUartAddr);

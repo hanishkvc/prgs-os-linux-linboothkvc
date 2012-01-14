@@ -60,10 +60,12 @@ cat $KERN_SYMS | grep "disable_nonboot_cpus"
 cat $KERN_SYMS | grep "show_pte"
 
 elif [[ $1 == "asm" ]]; then
-make DEVICE=$DEVICE asmp2
+	rm nirvana1.S
+	ln -s probe2.S nirvana1.S
+	make DEVICE=$DEVICE asm
 
 elif [[ $1 == "install" ]]; then
-DEVICE=$DEVICE ./install.sh
+	DEVICE=$DEVICE ./install.sh
 
 elif [[ $1 == "uuencode" ]]; then
 uuencode lbhkvc_km_$DEVICE.ko lbhkvc_km_$DEVICE.ko > lbhkvc_km.ko.uu

@@ -14,46 +14,19 @@ all:
 	#$(MAKE) V=1 -C $(KERNEL_DIR) M=$(PWD) modules
 clean:
 	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) clean
-	rm dummy1 hkvc.dummy1.bin || /bin/true
+	rm nirvana1 hkvc.nirvana1.bin || /bin/true
 
-bloop1: bloop1.S
-	rm dummy1.S
-	ln -s bloop1.S dummy1.S
 
-asm1: bloop1 asm
-
-bloop2: bloop2.S
-	rm dummy1.S
-	ln -s bloop2.S dummy1.S
-
-asm2: bloop2 asm
-
-bloop3: bloop3.S
-	rm dummy1.S
-	ln -s bloop3.S dummy1.S
-
-asm3: bloop3 asm
-
-probe1: probe1.S
-	rm dummy1.S
-	ln -s probe1.S dummy1.S
-
-asmp1: probe1 asm
-
-probe2: probe2.S
-	rm dummy1.S
-	ln -s probe2.S dummy1.S
-
-asmp2: probe2 asm
 
 asm:
-	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o dummy1 dummy1.S -Ttext=0
-	$(CROSS_COMPILE)objdump -d dummy1
-	$(CROSS_COMPILE)objcopy -O binary -j .text dummy1 hkvc.dummy1.bin
-	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.dummy1.bin
-	xxd -i hkvc.dummy1.bin > hkvc.dummy1.h
+	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o nirvana1 nirvana1.S -Ttext=0
+	$(CROSS_COMPILE)objdump -d nirvana1
+	$(CROSS_COMPILE)objcopy -O binary -j .text nirvana1 hkvc.nirvana1.bin
+	$(CROSS_COMPILE)objdump -D -m armv7-a -b binary hkvc.nirvana1.bin
+	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.nirvana1.bin
+	xxd -i hkvc.nirvana1.bin > hkvc.nirvana1.h
 
 dump:
-	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.dummy1.bin | less
+	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.nirvana1.bin | less
 	$(CROSS_COMPILE)objdump -d lbhkvc_km.ko | less
 
