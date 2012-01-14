@@ -1,7 +1,22 @@
 Readme
-v12Jan2012
-HKVC
------------------------
+v14Jan2012_1010
+HKVC, GPL
+---------------------
+
+
+
+Bugs
+-----------
+The code to execute which is copied to kmalloced location, doesn't seem to be flushed
+to memory successfully always. This is also one serious issue affecting the kexec working
+currently. Have to look at cache flushing kernel function which I have used properly
+tomorrow and if required replace it or, have to move the code to copy to final location
+in my code in innermost kexec after it disables interrupts and calls DSB and ISB (just to
+be safe, even thou DSB and ISB doesn't seem to be helping here).
+
+Also the patch to the kernel module by insmod support logic in kernel to resolve the
+external symbols used in the module itself seems to be NOT fully flushed back into memory
+from cache sometimes.
 
 
 Omap3 Bootrom +
