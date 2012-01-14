@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v14Jan2012_1110
+ * v15Jan2012_0127
  * HKVC, GPL, 04Jan2012_2105
  *
  * NOTE: Partly Old comments below
@@ -32,6 +32,7 @@
 #include "uart_utils.h"
 
 #include "hkvc.nirvana1.h"
+#include "hkvc.nchild.h"
 
 #define ENABLE_TESTBEFORE 1
 #define ENABLE_PATCHUART 1
@@ -41,20 +42,20 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v14Jan2012_1111"
+#define LBHKVC_VERSION "v15Jan2012_0128"
 
 static DEFINE_SPINLOCK(main_lock);
 
-#define S2S_BUFSIZE (32*1024)
-#define O2O_BUFSIZE (32*1024)
+#define NCHILD_BUFSIZE (32*1024)
+#define NIRVANA_BUFSIZE (32*1024)
 
 #define EXEC_TYPE_ALLOC 0
 #define EXEC_TYPE_FIXED 1
 static unsigned long mpExecType = 0;
 module_param(mpExecType, ulong, 0);
 
-static unsigned long mpFixedExecVAddr = 0xc0008000;
-module_param(mpFixedExecVAddr, ulong, 0);
+static unsigned long mpFixedNirvanaVAddr = 0xc0008000;
+module_param(mpFixedNirvanaVAddr, ulong, 0);
 
 static int mpTestBefore = 0;
 module_param(mpTestBefore, int, 0);
@@ -62,9 +63,9 @@ module_param(mpTestBefore, int, 0);
 static int mpPatchUart1 = 0;
 module_param(mpPatchUart1, int, 0);
 
-char s2s_simpbuf[S2S_BUFSIZE];
-char o2o_simpbuf[O2O_BUFSIZE];
-char *o2o_km, *s2s_km;
+char simpbufNChild[NCHILD_BUFSIZE];
+char simpbufNirvana[NIRVANA_BUFSIZE];
+char *kmNirvana, *kmNChild;
 
 static long lbhkvc_ioctl(struct file *filp, unsigned int command, unsigned long arg);
 static int lbhkvc_mmap(struct file *filp, struct vm_area_struct *v);
@@ -239,18 +240,18 @@ void get_mymem(void)
 	long *klpaddr;
 	struct hkvc_mem_type mt;
 
-	s2s_km = kmalloc(S2S_BUFSIZE,GFP_KERNEL);
-	if(!s2s_km)
-		printk(KERN_ERR "lbhkvc: Failed to allocate s2s\n");
-	o2o_km = kmalloc(O2O_BUFSIZE,GFP_KERNEL);
-	if(!o2o_km)
-		printk(KERN_ERR "lbhkvc: Failed to allocate o2o\n");
+	kmNChild = kmalloc(NCHILD_BUFSIZE,GFP_KERNEL);
+	if(!kmNChild)
+		printk(KERN_ERR "lbhkvc: Failed to allocate NChild\n");
+	kmNirvana = kmalloc(NIRVANA_BUFSIZE,GFP_KERNEL);
+	if(!kmNirvana)
+		printk(KERN_ERR "lbhkvc: Failed to allocate Nirvana\n");
 
-	hkvc_meminfo_vaddr((unsigned long)s2s_km,"s2s_km");
-	hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
+	hkvc_meminfo_vaddr((unsigned long)kmNChild,"kmNChild");
+	hkvc_meminfo_vaddr((unsigned long)kmNirvana,"kmNirvana");
 
-	kvaddr = (long*)o2o_km;
-	kpaddr = (long*)virt_to_phys(o2o_km);
+	kvaddr = (long*)kmNirvana;
+	kpaddr = (long*)virt_to_phys(kmNirvana);
 	klpaddr = kpaddr;
 	*kvaddr = 0x1234f0f0;
 	mt.prot_pte = L_PTE_PRESENT | L_PTE_USER | L_PTE_WRITE;
@@ -261,14 +262,25 @@ void get_mymem(void)
 
 void dump_mymem(void)
 {
-	printk(KERN_INFO "lbhkvc: My s2s_simpbuf V:0x%p\n",s2s_simpbuf);
-	hkvc_meminfo_vaddr((unsigned long)s2s_simpbuf,"Internal s2s_simpbuf");
-	printk(KERN_INFO "lbhkvc: My o2o_simpbuf V:0x%p\n",o2o_simpbuf);
-	hkvc_meminfo_vaddr((unsigned long)o2o_simpbuf,"Internal o2o_simpbuf");
+	printk(KERN_INFO "lbhkvc: My simpbufNChild V:0x%p\n",simpbufNChild);
+	hkvc_meminfo_vaddr((unsigned long)simpbufNChild,"Internal simpbufNChild");
+	printk(KERN_INFO "lbhkvc: My simpbufNirvana V:0x%p\n",simpbufNirvana);
+	hkvc_meminfo_vaddr((unsigned long)simpbufNirvana,"Internal simpbufNirvana");
+}
+
+unsigned long hkvc_mem_touch(void *kva, int len)
+{
+	unsigned long *pBuf = (unsigned long*)kva;
+	int i;
+	volatile unsigned long lTouch;
+	for(i=0; i<(len/4); i++) {
+		lTouch += pBuf[i];
+	}
+	return lTouch;
 }
 
 /* Identified from kernel/machine_kexec.c and inturn looking at mm/proc-v7.S */
-void hkvc_kexec_minimal(unsigned long kpaddr)
+void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsigned long nchildLen)
 {
 	unsigned long lTemp;
 	unsigned long flags;
@@ -288,7 +300,7 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 		:"=r"(lTemp)
 		);
 	hkvc_uart_send_hex(lTemp);
-	//kh_cpu_v7_reset(kpaddr);
+	//kh_cpu_v7_reset(kpaNirvana);
 	__asm__ ("mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
@@ -304,13 +316,15 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 #warning "********* MMU NOT Disabled in preperation for Nirvana code\n"
 #endif
 		 "mov r5,r5\n"
+		 "mov r0,%1\n"
+		 "mov r1,%2\n"
 		 "mov pc,%0\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		:
-		: "r"(kpaddr)
+		: "r"(kpaNirvana), "r"(kpaNChild), "r"(nchildLen)
 		);
 }
 EXPORT_SYMBOL(hkvc_kexec_minimal);
@@ -321,50 +335,69 @@ void (*test_end_code)(void) = (void*) 0x0;
 
 #endif
 
-void hkvc_kexec_minimal_ext(unsigned long kpaddr, unsigned long kvaddr)
+void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana, 
+				unsigned long kpaNChild, unsigned long kvaNChild, unsigned long childLen)
 {
+
 	hkvc_sleep(0x20000000);
-        kh_v7_coherent_kern_range( kvaddr, kvaddr+PAGE_SIZE);
+        kh_v7_coherent_kern_range( kvaNirvana, kvaNirvana+PAGE_SIZE);
+
 #ifdef ENABLE_TESTBEFORE
 	if(mpTestBefore) {
 		printk(KERN_WARNING "Could CRASH\n");
-		test_end_code = (void*)kvaddr;
+		test_end_code = (void*)kvaNirvana;
 		test_end_code();
 	}
 #endif
         printk(KERN_INFO "Bye!\n");
-	hkvc_kexec_minimal(kpaddr);
+	hkvc_kexec_minimal(kpaNirvana, kpaNChild, childLen);
 }
 EXPORT_SYMBOL(hkvc_kexec_minimal_ext);
 
 void hkvc_kexec_alloc(void)
 {
-	long kpaddr;
+	long kpaNirvana, kpaNChild;
 
-	o2o_km = kmalloc(O2O_BUFSIZE,GFP_KERNEL);
-	if(!o2o_km) {
-		printk(KERN_ERR "lbhkvc: Failed to allocate o2o_km\n");
+	kmNirvana = kmalloc(NIRVANA_BUFSIZE,GFP_KERNEL);
+	if(!kmNirvana) {
+		printk(KERN_ERR "lbhkvc: NirvanaCode - Failed to allocate kmNirvana\n");
 		return;
 	} else {
-		kpaddr = virt_to_phys(o2o_km);
-		printk(KERN_INFO "lbhkvc: kmalloced at V:0x%p P:0x%lx\n", o2o_km, kpaddr);
+		kpaNirvana = virt_to_phys(kmNirvana);
+		printk(KERN_INFO "lbhkvc: NirvanaCode - kmalloced location at V:0x%p P:0x%lx\n", kmNirvana, kpaNirvana);
 	}
-	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
-        memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
-	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
+	//hkvc_meminfo_vaddr((unsigned long)kmNirvana,"kmNirvana");
+        memcpy(kmNirvana, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
+
+	kmNChild = kmalloc(NCHILD_BUFSIZE,GFP_KERNEL);
+	if(!kmNChild) {
+		printk(KERN_ERR "lbhkvc: NirvanaChild - Failed to allocate kmNChild\n");
+		return;
+	} else {
+		kpaNChild = virt_to_phys(kmNChild);
+		printk(KERN_INFO "lbhkvc: NirvanaChild - kmalloced location at V:0x%p P:0x%lx\n", kmNChild, kpaNChild);
+	}
+	//hkvc_meminfo_vaddr((unsigned long)kmNChild,"kmNChild");
+        memcpy(kmNChild, hkvc_nchild_bin, hkvc_nchild_bin_len);
+	//hkvc_mem_touch(hkvc_nchild_bin,hkvc_nchild_bin_len);
+
+
+	hkvc_kexec_minimal_ext(kpaNirvana, (unsigned long)kmNirvana, kpaNChild, (unsigned long)kmNChild, hkvc_nchild_bin_len+8);
 }
 EXPORT_SYMBOL(hkvc_kexec_alloc);
 
-void hkvc_kexec_fixed(unsigned long kvaddr)
+void hkvc_kexec_fixed(unsigned long kvaNirvana)
 {
-	unsigned long kpaddr;
+	unsigned long kpaNirvana, kpaNChild;
 
-	o2o_km = (void*)kvaddr;
-	kpaddr = virt_to_phys(o2o_km);
-	printk(KERN_INFO "lbhkvc: fixed kernel addr V:0x%p P:0x%lx\n", o2o_km, kpaddr);
-	//hkvc_meminfo_vaddr((unsigned long)o2o_km,"o2o_km");
-        memcpy(o2o_km, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
-	hkvc_kexec_minimal_ext(kpaddr, (unsigned long)o2o_km);
+	kmNirvana = (void*)kvaNirvana;
+	kpaNirvana = virt_to_phys(kmNirvana);
+	printk(KERN_INFO "lbhkvc: NirvanaCode - fixed (kernel) addr V:0x%p P:0x%lx\n", kmNirvana, kpaNirvana);
+	//hkvc_meminfo_vaddr((unsigned long)kmNirvana,"kmNirvana");
+        memcpy(kmNirvana, hkvc_nirvana1_bin, hkvc_nirvana1_bin_len);
+	// FIXME: Have to take care of providing a proper address for kmNChild also and then call minimal_ext
+	//printk(KERN_INFO "lbhkvc: Nirvana's Child VAddr: 0x%p PAddr: 0x%lx", hkvc_nchild_bin, kpaNChild);
+	//hkvc_kexec_minimal_ext(kpaNirvana, (unsigned long)kmNirvana);
 }
 EXPORT_SYMBOL(hkvc_kexec_fixed);
 
@@ -416,7 +449,7 @@ static s32 __init lbhkvc_init(void)
 		}
 	}
 	if(mpExecType == EXEC_TYPE_FIXED)
-		hkvc_kexec_fixed(mpFixedExecVAddr);
+		hkvc_kexec_fixed(mpFixedNirvanaVAddr);
 	else
 		hkvc_kexec_alloc();
 	printk(KERN_INFO "lbhkvc: Left hkvc_kexec - WILL BE SURPRISED\n");
