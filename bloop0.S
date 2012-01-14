@@ -1,4 +1,12 @@
-
+# bloop0.S - Recovered Initial Simple delay logic with jump to reset vector
+# HKVC, GPL, Jan2012
+# Stupid kernel make rules delete .s Asm files so had to recover from
+# the binary code.
+# Note this has the flag setting (rather NOT) mistake fixed in newer
+# versions/programs.
+# Also note that the simple jump to reset vector won't work in newer SOCs
+# where the reset vector can be remapped from 0 to ffff.0000 if required.
+#
 
 00000000 <.data>:
    0:	e1a00000 	nop			; (mov r0, r0)

@@ -1,6 +1,11 @@
 # HKVCs simple busy loop with no exit for linboothkvc checking
-# v06Jan2012_1404
+# v12Jan2012_1404
 # HKVC, GPL, 05Jan2012_2049
+#
+# This also prints to uart.
+# And disable MMU and sync data and instruction operations
+# This also takes care of setting the uart base address
+# based on currently selected device.
 #
 
 .text
