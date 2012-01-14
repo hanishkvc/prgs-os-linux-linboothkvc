@@ -4,7 +4,7 @@ DEVICE=DEVICE_BEAGLEXM
 #DEVICE=DEVICE_NOOKTAB
 
 LOCATION=HOME
-#LOCATION=OFFICE
+#LOCATION=OTHER1
 
 echo "DEVICE: " $DEVICE
 echo "LOCATION: " $LOCATION
@@ -13,22 +13,24 @@ read -p "Hope this is fine..."
 if [[ $DEVICE == "DEVICE_BEAGLEXM" ]]; then
 	if [[ $LOCATION == "HOME" ]]; then
 	KERPATH=/hanishkvc/external/Android/rowboat-gingerbread/kernel
-	CGCC=arm-linux-gnueabi-
+	#CGCC=arm-linux-gnueabi-
 	else
 	KERPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp/kernel
-	CGCC=arm-eabi-
+	#CGCC=arm-eabi-
 	fi
+	CGCC=arm-eabi-
 	KERN_SYMS=$KERPATH/System.map
 fi
 
 if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
 	if [[ $LOCATION == "HOME" ]]; then
 	KERPATH=/home/hanishkvc/hkvc/work/mysystem/nooktablet/ROMS/BN/source/1.4/distro/kernel/android-2.6.35
-	CGCC=arm-linux-gnueabi-
+	#CGCC=arm-linux-gnueabi-
 	else
 	KERPATH=/hkvcwork/externel/AndroidDevices/BN/distro/kernel/android-2.6.35
-	CGCC=arm-eabi-
+	#CGCC=arm-eabi-
 	fi
+	CGCC=arm-eabi-
 	KERN_SYMS=.target_kallsyms
 fi
 

@@ -6,16 +6,18 @@ lbhkvc_km_$(DEVICE)-objs := lbhkvc_k.o gen_utils.o uart_utils.o
 CFLAGS_lbhkvc_k.o += -D$(DEVICE)
 CFLAGS_uart_utils.o += -D$(DEVICE)
 
-CROSS_COMPILE=arm-linux-gnueabi-
-#CROSS_COMPILE=arm-eabi-
+#CROSS_COMPILE=arm-linux-gnueabi-
+CROSS_COMPILE=arm-eabi-
 
 all:
 	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) modules
 	#$(MAKE) V=1 -C $(KERNEL_DIR) M=$(PWD) modules
+	rm lbhkvc_km.ko || /bin/true
+	ln -s lbhkvc_km_$(DEVICE).ko lbhkvc_km.ko
 clean:
 	$(MAKE) -C $(KERNEL_DIR) M=$(PWD) clean
 	rm nirvana1 hkvc.nirvana1.bin || /bin/true
-
+	rm lbhkvc_km.ko || /bin/true
 
 
 asm:
