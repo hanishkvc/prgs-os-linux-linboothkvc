@@ -5,6 +5,9 @@
 # This version successfully loads a new linux kernel and
 # inturn a new linux system from with in a running linux
 # system. It uses x-loader to bootstrap the new linux.
+# Rather it is aganostic of whether one uses x-loader
+# or something else. It is only that I by default use a
+# x-load.bin.
 #
 # This also prints to uart.
 # And disable MMU and sync data and instruction operations
