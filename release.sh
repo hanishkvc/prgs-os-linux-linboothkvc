@@ -1,4 +1,6 @@
 #!/bin/bash
+# Logic to help release the project internally (myself) or externally
+# HKVC, GPL, Jan2012
 
 #rdir=linboothkvc-`date +%F-%T`
 rdir=linboothkvc-v`date +%F-%H`

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Support functions for common usecases in this project
+# HKVC, GPL, Jan2012
+#
 
 DEVICE=DEVICE_BEAGLEXM
 #DEVICE=DEVICE_NOOKTAB
