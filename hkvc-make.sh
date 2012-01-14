@@ -60,7 +60,7 @@ cat $KERN_SYMS | grep "disable_nonboot_cpus"
 cat $KERN_SYMS | grep "show_pte"
 
 elif [[ $1 == "asm" ]]; then
-make DEVICE=$DEVICE asmp1
+make DEVICE=$DEVICE asmp2
 
 elif [[ $1 == "install" ]]; then
 DEVICE=$DEVICE ./install.sh

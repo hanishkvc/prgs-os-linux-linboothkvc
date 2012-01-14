@@ -107,3 +107,12 @@ if [[ "$mode" == "run" ]] || [[ "$modeext" == "run" ]]; then
 	qemu-system-arm -M beaglexm -sdl -clock unix -sd $1 -s
 fi
 
+if [[ "$mode" == "openocd" ]]; then
+
+export PATH=/opt/hkvc/openocd/bin:$PATH
+openocd -s /opt/hkvc/openocd/share/openocd/scripts -f interface/xds100v2.cfg -f board/ti_beagleboard_xm.cfg
+echo "By default openocd provides a telnet server on 4444 and GDB on 3333"
+echo "In gdb> target remote localhost:3333  ---------should allow one to connect using gdb and debug"
+
+fi
+

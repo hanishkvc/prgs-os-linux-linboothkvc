@@ -9,6 +9,7 @@ mkdir $rdir
 echo "Files being copied..."
 cp -v *.* $rdir/
 cp -v Makefile $rdir/
+cp -v README* $rdir/
 
 if [[ $1 != "internal" ]]; then
 echo "INFO: EXTERNAL release - Shorten Developer full name..."
