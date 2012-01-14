@@ -66,8 +66,16 @@ cat $KERN_SYMS | grep "show_pte"
 
 elif [[ $1 == "asm" ]]; then
 	rm nirvana1.S
-	ln -s probe2.S nirvana1.S
+	if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
+	ln -s call1.S nirvana1.S
+	else
+	ln -s omap3callbootrom1.S nirvana1.S
+	fi
 	make DEVICE=$DEVICE asm
+
+elif [[ $1 == "nchild" ]]; then
+	cp misc/Binaries/HKVC-x-load.bin hkvc.nchild.bin
+	make DEVICE=$DEVICE nchild
 
 elif [[ $1 == "install" ]]; then
 	DEVICE=$DEVICE ./install.sh

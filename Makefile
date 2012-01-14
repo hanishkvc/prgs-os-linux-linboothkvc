@@ -19,6 +19,8 @@ clean:
 	rm nirvana1 hkvc.nirvana1.bin || /bin/true
 	rm lbhkvc_km.ko || /bin/true
 
+nchild:
+	xxd -i hkvc.nchild.bin > hkvc.nchild.h
 
 asm:
 	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o nirvana1 nirvana1.S -Ttext=0
