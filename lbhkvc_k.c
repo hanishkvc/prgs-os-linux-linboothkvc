@@ -394,6 +394,7 @@ static s32 __init lbhkvc_init(void)
 #else
 	printk(KERN_INFO "lbhkvc: MMU will NOT be disabled for switching to new env\n");
 #endif
+	printk(KERN_INFO "lbhkvc: hkvc_kexec_minimal addr = 0x%p\n",hkvc_kexec_minimal);
 
 #ifdef ENABLE_PATCHUART
 	patchUartAddr = (long*)&hkvc_dummy1_bin[hkvc_dummy1_bin_len-4];
