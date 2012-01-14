@@ -292,7 +292,7 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 #ifdef ENABLE_MMU_DISABLE_BEFORELEAVING
-#warning "********* MMU Disabled Before LEAVING\n"
+#warning "********* MMU Disabled in preperation for Nirvana code\n"
 		 "mrc p15, 0, r2, c1, c0, 0\n"
 		 "bic r2, r2, #1\n"
 		 "mrc p15, 0, r2, c1, c0, 0\n"
@@ -300,7 +300,7 @@ void hkvc_kexec_minimal(unsigned long kpaddr)
 		 "ISB \n"
 		 "mov r5,r5\n"
 #else
-#warning "********* MMU NOT Disabled Before LEAVING\n"
+#warning "********* MMU NOT Disabled in preperation for Nirvana code\n"
 #endif
 		 "mov r5,r5\n"
 		 "mov pc,%0\n"

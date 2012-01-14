@@ -22,7 +22,7 @@ asm:
 	$(CROSS_COMPILE)gcc -D$(DEVICE) -nostdlib -march=armv7-a -o nirvana1 nirvana1.S -Ttext=0
 	$(CROSS_COMPILE)objdump -d nirvana1
 	$(CROSS_COMPILE)objcopy -O binary -j .text nirvana1 hkvc.nirvana1.bin
-	$(CROSS_COMPILE)objdump -D -m armv7-a -b binary hkvc.nirvana1.bin
+	$(CROSS_COMPILE)objdump -D -m armv7-a -b binary hkvc.nirvana1.bin || /bin/true
 	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.nirvana1.bin
 	xxd -i hkvc.nirvana1.bin > hkvc.nirvana1.h
 
