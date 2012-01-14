@@ -1,5 +1,5 @@
 /*
- * uart_utils - Logic to directly write to uart0 of omap4 platform
+ * uart_utils - Logic to directly write to uart of omap3/4 platform
  * v06Jan2012_2322
  * HKVC, GPL
  *
