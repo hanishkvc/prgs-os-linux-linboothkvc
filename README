@@ -1,7 +1,53 @@
-Readme
-v14Jan2012_1010
+Readme - linboothkvc
+v15Jan2012_0127
 HKVC, GPL
----------------------
+A linux kernel module based bootstrap loader
+----------------------------------------------
+
+>> 15Jan2012 <<
+
+Have completed the qemu beaglexm based linboothkvc (kexec) FULLY Now. Now from
+with in a running linux system in qemu, you can restart a new linux kernel and its
+user space.
+
+For this currently it uses the x-loader itself to bootstrap u-boot.bin and inturn
+the linux kernel, similar to how the hardware bootrom does it on power on. This
+new x-load.bin image is embedded within the kernel module.
+
+I have updated the kernel module such that it takes 2 images into itself.
+
+Image 1 == The Nirvana Code (Example - bloop?.S, omap3callbootrom1.S, ...)
+This gets passed the control once the kernel module is done with disabling interrupts,
+disabling mmu (something seems to be missing wrt this with the latest changes I did
+to accomodate Nirvana and Nirvana's child, have to debug later), setting up the
+1 to 1 mmu map, etc.
+
+In turn currently the nirvana code omap3callbootrom1.S takes care of disabling mmu,
+interrupts etc once again just to be safe. And inturn it loads the NirvanaChild code
+into 0x4020.0800 similar to how Omap3 bootrom loader does its job, and inturn calls
+the entry point at 0x4001.4000 in the bootrom. This takes care of setting up the
+stack and calling the NirvanaChild Code.
+
+Image 2 == The NirvanaChild Code (Example - x-load.bin (without signGP))
+The address and length of this code is passed to Nirvana Code thro r0 and r1
+respectively. It is upto Nirvana code to decide what it will do with this image.
+
+As of today only the omap3callbootrom1.S nirvana code handles this image as required
+while the older nirvana codes don't know about this.
+
+NOTE: misc/Binaries/HKVC-x-load.bin - Currently the new x-load.bin is expected to be
+with in misc/Binaries/HKVC-x-load.bin in the linboothkvc subfolder.
+
+If you want to experiment with a new x-loader or any other bootloader, then copy it
+to above mentioned location and then run the following.
+
+./hkvc-make clean
+./hkvc-make nchild
+./hkvc-make asm
+./hkvc-make
+
+Next copy the lbhkvc_km_DEVICE_BEAGLEXM.ko to qemu running linux (for which you
+compiled the kernel module). and insmod the kernel module and see the magic :-)
 
 >> 14Jan2012 <<
 
