@@ -36,13 +36,21 @@
 
 #define ENABLE_TESTBEFORE 1
 #define ENABLE_PATCHUART 1
-#define ENABLE_MMU_DISABLE_BEFORELEAVING 1
-//#undef ENABLE_MMU_DISABLE_BEFORELEAVING
+// NOTE: As beaglexm has only 256 or 512MB of ram and inturn as the
+// kernel modules are stored some where around 0xbf00.0000 or beyond
+// the setup_mm_for_reboot won't map this virtual address to equivalent
+// physical address, as there is no memory to map to at this address.
+// So when disabling mmu from within the kernel module before passing
+// control to Nirvana code, it will fail, as there is non 1-to-1
+// or same-to-same mapping at this address where mmu gets disabled.
+// So undefing the MMU_DISABLE_BEFORELEAVING logic
+//#define ENABLE_MMU_DISABLE_BEFORELEAVING 1
+#undef ENABLE_MMU_DISABLE_BEFORELEAVING 
 
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v15Jan2012_0128"
+#define LBHKVC_VERSION "v15Jan2012_2255"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -301,26 +309,27 @@ void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsig
 		);
 	hkvc_uart_send_hex(lTemp);
 	//kh_cpu_v7_reset(kpaNirvana);
-	__asm__ ("mov r5,r5\n"
-		 "mov r5,r5\n"
-		 "mov r5,r5\n"
+	__asm__ ("mov r0,r0\n"
+		 "mov r0,r0\n"
+		 //"bkpt #1\n"	// qemu and gdb target remote combination doesn't trap this, have to check with openocd yet
+		 "mov r0,r0\n"
 #ifdef ENABLE_MMU_DISABLE_BEFORELEAVING
 #warning "********* MMU Disabled in preperation for Nirvana code\n"
 		 "mrc p15, 0, r2, c1, c0, 0\n"
 		 "bic r2, r2, #1\n"
-		 "mrc p15, 0, r2, c1, c0, 0\n"
-		 "mov r5,r5\n"
+		 "mcr p15, 0, r2, c1, c0, 0\n"
+		 "mov r0,r0\n"
 		 "ISB \n"
-		 "mov r5,r5\n"
+		 "mov r0,r0\n"
 #else
 #warning "********* MMU NOT Disabled in preperation for Nirvana code\n"
 #endif
-		 "mov r5,r5\n"
+		 "mov r0,r0\n"
 		 "mov r0,%1\n"
 		 "mov r1,%2\n"
 		 "mov pc,%0\n"
-		 "mov r5,r5\n"
-		 "mov r5,r5\n"
+		 "mov r0,r0\n"
+		 "mov r0,r0\n"
 		 "mov r5,r5\n"
 		 "mov r5,r5\n"
 		:
@@ -423,9 +432,13 @@ static s32 __init lbhkvc_init(void)
 	printk(KERN_INFO "lbhkvc: hard_smp_processor_id = %d\n",hard_smp_processor_id());
 #endif
 #ifdef ENABLE_MMU_DISABLE_BEFORELEAVING
-	printk(KERN_INFO "lbhkvc: MMU will be disabled for switching to new env\n");
+	printk(KERN_INFO "lbhkvc: DANGER: MMU will be disabled before switching to new env(Nirvana)\n");
+	printk(KERN_INFO "lbhkvc: NOTE: This won't work unless the system has atleast 1GB ram\n");
+	printk(KERN_INFO "lbhkvc: NOTE: also assumes kernel modules load around 0xbf00.0000\n");
+	printk(KERN_INFO "lbhkvc: NOTE: which is within 1GB memory so a same-to-same map can exist\n");
 #else
-	printk(KERN_INFO "lbhkvc: MMU will NOT be disabled for switching to new env\n");
+	printk(KERN_INFO "lbhkvc: SAFE: MMU will NOT be disabled before switching to new env(Nirvana)\n");
+	printk(KERN_INFO "lbhkvc: SAFE: Nirvana Code is required to disable mmu \n");
 #endif
 	printk(KERN_INFO "lbhkvc: hkvc_kexec_minimal addr = 0x%p\n",hkvc_kexec_minimal);
 	printk(KERN_INFO "lbhkvc: hkvc_nirvana1_bin addr = 0x%p\n",hkvc_nirvana1_bin);

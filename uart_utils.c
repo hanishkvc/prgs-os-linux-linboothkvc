@@ -31,7 +31,7 @@ void hkvc_uart_wait_on_tx_busy(void)
 	while(readw(uartPort+HKVC_UART_LSR) & TX_BUSY_MASK) {
 #ifdef ENABLE_INSERTE_ONWAIT
 		if(cnt == UARTWAIT_INSERTECNT) {
-			writew('E',uartPort+HKVC_UART_TX);
+			writew('~',uartPort+HKVC_UART_TX);
 		}
 #endif
 		if(cnt > UARTWAIT_MAXCNT) {
