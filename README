@@ -6,6 +6,26 @@ A linux kernel module based bootstrap loader
 
 >> 15Jan2012 <<
 
+The issue with disabling mmu with in kernel module not working in last release
+has been fixed.
+
+The actual bug was that I had wrongly used mrc after bic instead of mcr. However
+it actually wouldn't have worked for 100% in beaglexm, because kernel modules
+get loaded into a virtual address around 0xbf00.0000, which is well beyond the
+physical memory address available (i.e with actual DRAM) in beaglexm (which is
+only 512MB i.e 0x8000.0000+512MB) so setup-mm-for-reset/reboot wouldn't have
+set a 1-to-1 (s-to-s) map for this virtual address and once mmu gets disabled
+the processor would have messed up with a exception/????
+
+So for now it is only safe to disable mmu from within Nirvana code, and not
+from with in kernel module code. And the nirvana code omap3callbootrom1.S
+already takes care of this mmu disable properly.
+
+Also found that Bkpt instruction doesn't work between qemu and gdb with target
+remote combination. Haven't checked with openocd+gdb and actual h/w yet.
+
+>> 15Jan2012 <<
+
 Have completed the qemu beaglexm based linboothkvc (kexec) FULLY Now. Now from
 with in a running linux system in qemu, you can restart a new linux kernel and its
 user space.
