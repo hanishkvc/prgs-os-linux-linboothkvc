@@ -102,6 +102,8 @@ if [[ "$mode" == "umount" ]] || [[ "$mode" == "all" ]]; then
 fi
 
 if [[ "$mode" == "run" ]] || [[ "$modeext" == "run" ]]; then
+	echo "Enabling core file generation using ulimit"
+	ulimit -c unlimited
 	#qemu-system-arm -M beaglexm -clock unix -sd $1 -nographic -serial pty -serial pty -serial pty -serial pty
 	#qemu-system-arm -M beaglexm -sdl -clock unix -sd $1
 	qemu-system-arm -M beaglexm -sdl -clock unix -sd $1 -s
