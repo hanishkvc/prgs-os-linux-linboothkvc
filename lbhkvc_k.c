@@ -3,6 +3,9 @@
  * v16Jan2012_2142
  * HKVC, GPL, 04Jan2012_2105
  *
+ * UPDATE: moving away from cunning/intelligent MVA based cache operations to
+ * set/way based once solved the cache flush not reaching memory issue.
+ *
  * NOTE: Partly Old comments below
  * Move to core CPU in the SMP setup 
  * - Disable the non_core/other CPU(s) in a SMP setup (Have to think thro further)
