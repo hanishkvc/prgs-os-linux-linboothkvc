@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v15Jan2012_0127
+ * v16Jan2012_2142
  * HKVC, GPL, 04Jan2012_2105
  *
  * NOTE: Partly Old comments below
@@ -26,6 +26,8 @@
 #include <asm/highmem.h>
 #include <asm/fixmap.h>
 #include <asm/page.h>
+#include <asm/cacheflush.h>
+#include <asm/uaccess.h>
 #include <linux/spinlock.h>
 
 #include "gen_utils.h"
@@ -50,7 +52,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v15Jan2012_2255"
+#define LBHKVC_VERSION "v16Jan2012_2142"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -294,16 +296,17 @@ void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsig
 	unsigned long flags;
 
 	spin_lock_irqsave(&main_lock,flags);
-	hkvc_uart_send("A1\n",3);
+	hkvc_uart_send("A1IrqSave\n",10);
 	__asm__("DSB \n");
 	__asm__("ISB \n");
 	kh_cpu_v7_proc_fin();
 	__asm__("ISB \n");
-	hkvc_uart_send("A2\n",3);
+	__asm__("MCR p15, 0, r0, c7, c5, 0 \n");
+	hkvc_uart_send("A2ProcFin\n",10);
 	kh_setup_mm_for_reboot(0);
 	__asm__("DSB \n");
 	__asm__("ISB \n");
-	hkvc_uart_send("A3\n",3);
+	hkvc_uart_send("A3SetupMm\n",10);
 	__asm__("mrc p15, 0, %0, c1, c0, 0\n"
 		:"=r"(lTemp)
 		);
@@ -348,8 +351,44 @@ void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
 				unsigned long kpaNChild, unsigned long kvaNChild, unsigned long childLen)
 {
 
+	printk( KERN_INFO "lbhkvc: get_fs() = 0x%lx AND KERNEL_DS = 0x%lx\n",get_fs(),(unsigned long)KERNEL_DS);
 	hkvc_sleep(0x20000000);
+
+	// set_fs - doesn't seem to affect flush_icache_range based on reading of the code, but not sure why generic
+	// module loading uses it. May be in some other architecture there is a reference to this. Also haven't checked
+	// set/way based logic fully yet beyond my immidiate need (again dont see need for this), so keeping it for now.
+	set_fs(KERNEL_DS);
+	// The set/way based logic which walks thro multiple cache levels and flushes all cached data which includes
+	// among others the properly resolved/linked kernel module code as well as my Nirvana and NChild code.
+	__cpuc_flush_kern_all();
+#ifdef OLD_DIRECT_FLUSH_ICACHE_RANGE_LOGIC
+#warning "Executing DIRECT flush_icache_range"
+	flush_icache_range( kvaNirvana, kvaNirvana+PAGE_SIZE); // the MVA based logic which doesn't flush till memory
+	flush_icache_range( kvaNChild, kvaNChild+childLen);
+#endif
+#ifdef OLD_INDIRECT_FLUSH_ICACHE_RANGE_LOGIC
+#warning "Executing INDIRECT flush_icache_range"
         kh_v7_coherent_kern_range( kvaNirvana, kvaNirvana+PAGE_SIZE);
+        kh_v7_coherent_kern_range( kvaNChild, kvaNChild+childLen);
+#endif
+
+#ifdef OLD_FLUSH_KERNEL_MODULE_REQUIRED_CODE
+	/* kernel load_module code takes care of flushing - have to check the strangeness related to this still not
+	   reflecting in memory ????
+	   UPDATE: Have identified the issue. flush_icache_range uses MVA based Cache maintainance operation which
+	   syncs across all the processing masters but not necessarily to the level of memory, depending on the SOC
+	   architecture. This is fine because kernel doesn't disable cache for its normal operation. But in our case
+	   as we fully disable cache, the kernel module code it self appears stale, as the linking related resolution
+	   done by module loader gets lost once cache is disabled, many a times. the flush_kern_all takes care of
+	   handling this.
+
+        kh_v7_coherent_kern_range( (unsigned long)hkvc_kexec_minimal, (unsigned long)hkvc_kexec_minimal_ext);
+        kh_v7_coherent_kern_range( (unsigned long)hkvc_sleep, (unsigned long)hkvc_sleep+PAGE_SIZE);
+        kh_v7_coherent_kern_range( (unsigned long)hkvc_uart_send, (unsigned long)hkvc_uart_send+PAGE_SIZE);
+        kh_v7_coherent_kern_range( (unsigned long)hkvc_uart_send_hex, (unsigned long)hkvc_uart_send_hex+PAGE_SIZE);
+        kh_v7_coherent_kern_range( (unsigned long)hkvc_uart_wait_on_tx_busy, (unsigned long)hkvc_uart_wait_on_tx_busy+PAGE_SIZE);
+	*/
+#endif
 
 #ifdef ENABLE_TESTBEFORE
 	if(mpTestBefore) {

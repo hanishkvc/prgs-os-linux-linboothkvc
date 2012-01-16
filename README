@@ -1,8 +1,74 @@
 Readme - linboothkvc
-v15Jan2012_0127
+v16Jan2012_2204
 HKVC, GPL
 A linux kernel module based bootstrap loader
 ----------------------------------------------
+
+>> 16Jan2012_2154 <<
+:-) SUCCESS ON a Actual HARDWARE :-) (not _the_ h/w yet ;-)
+
+For Arm Cortex_A8 based SOCs (tried with Dm3730)
+Hopefully similar conclusion should work for Omap4 successfully, except for any
+unknown (to me currently) SMP issues, inspite of me shutting down the 2nd processor.
+------------------------------------------------------------------------------
+After further experimentations, digging thro docs and frustrations, have finally
+realised that MVA based Cache maintainance operations aren't sufficient for
+flushing updated data from Cache to Memory, because the POU or POC in many cases
+terminates at L2 or some other Cache level rather than Memory.
+
+Now MVA based cache flush operations are fine for normal linux kernel operations,
+but for getting into a Nirvana (new prestine execution environment) setup with
+caches disabled, this is not good enough as the changes don't hit the memory.
+
+Leave linboothkvc related memory operations for Nirvana or NChild code aside,
+Rather even the kernel module loaders symbol resolution updates to the
+kernel module code also doesn't get saved to memory - because even it uses
+flush_icache_range which inturn uses v7_coherent_kern_range which inturn
+uses MVA based cache flush operations.
+
+So in conclusion we require a cache flush logic which uses set/way based cache
+maintainance operation and inturn walks thro all the cache heirarchy levels.
+In turn the flush_kern_all provides the required operation to achieve the same.
+
+Currenlty I am using my understanding of Omap3 bootrom code based on the dump
+of the same in qemu-linaro as well as on Dm3730 using openocd and xds100v2
+to jump to the new bootloader (i.e NChild, which is x-loader currently) from
+Nirvana code. So this will work with BeagleXM. However for NookTab, I have
+to look at Omap4 bootrom, for which I haven't looked at jtag access currently.
+
+But once I have setup the proper Nirvana code for NookTab, the logic should
+work 99% on it, as my finding/understanding of Cache issue which I faced
+seems to indicate the same unless SMP adds some additional complexity, which
+seems less likely currently to me.
+
+NOTE: TOCHECK_LATER: If I put a busy loop in the Nirvana Code of sufficiently
+long duration then the system seems to go haywire and abort, may be some
+watchdog timer is trying to kick in or ?????, have to debug later.
+
+NOTE: In ARM Clean cache means flush the data from Cache to next cache level
+or memory and Invalidate cache means make the given cache line entry invalid,
+so that a fresh access to the address will force a read from the next cache
+level or memory.
+
+>> 16Jan2012_0138 <<
+
+There is a VA-to-PA translation instruction provided by ARM CP15 system
+coprocessor.
+
+There is simple sys and msr and mrs (if I remember names correctly) instructions
+available instead of mcr and mrc instrcutions
+
+The swi has been renamed svc
+
+For cache and if required TLB flushing MVA based instructions of CP15 will
+be the simplest (i.e where the MemoryVirtualAddress is provided).
+
+NOTE: Till date the issues I have found, yet to resolve have been related
+to Cache flushing (is it called invalidate or clean or ... in Arm) and
+not affected by TLB.
+
+Have to check the relation between TLB and PageTables and Hardwired and
+Software controlled in ARM in depth later.
 
 >> 15Jan2012 <<
 
