@@ -34,3 +34,6 @@ dump:
 	$(CROSS_COMPILE)objdump -D -m armv5te -b binary hkvc.nirvana1.bin | less
 	$(CROSS_COMPILE)objdump -d lbhkvc_km.ko | less
 
+dumpko:
+	$(CROSS_COMPILE)objdump -d -x lbhkvc_km.ko | less
+
