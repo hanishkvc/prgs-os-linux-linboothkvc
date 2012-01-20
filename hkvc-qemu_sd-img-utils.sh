@@ -5,12 +5,28 @@
 # HKVC, GPL, Jan2012
 #
 
+DEVICE=DEVICE_PANDA
+#DEVICE=DEVICE_BEAGLEXM
+LOCATION=HOME
+#LOCATION=OTHER1
 
-#ANDPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp
-ANDPATH=/hanishkvc/external/Android/rowboat-gingerbread
+if [[ "$LOCATION" == "HOME" ]]; then
+	if [[ "$DEVICE" == "DEVICE_PANDA" ]]; then
+	ANDPATH=/hanishkvc/external/PandaBoard/omapzoom.org
+	ROOTFSPATH=$ANDPATH/rootfs
+	else
+	ANDPATH=/hanishkvc/external/Android/rowboat-gingerbread
+	ROOTFSPATH=$ANDPATH/out/target/product/beagleboard/root
+	fi
+else
+ANDPATH=/hkvcwork/externel/rowboat/gingerbread-nondsp
+ROOTFSPATH=$ANDPATH/out/target/product/beagleboard/root
+fi
 
+echo "DEVICE: " $DEVICE
+echo "LOCATION: " $LOCATION
 echo "Android path: " $ANDPATH
-read -p "Is above android path correct..."
+read -p "Is above settings correct..."
 
 
 if [[ $# < 2 ]]; then
@@ -74,10 +90,12 @@ fi
 
 
 if [[ "$mode" == "copy" ]] || [[ "$mode" == "all" ]]; then
-	cp $ANDPATH/x-loader/MLO /mnt/d1/
-	cp $ANDPATH/u-boot/u-boot.bin /mnt/d1/
-	cp $ANDPATH/kernel/arch/arm/boot/uImage /mnt/d1/
-	pushd $ANDPATH/out/target/product/beagleboard/root
+	cp -v $ANDPATH/x-loader/MLO /mnt/d1/
+	cp -v $ANDPATH/x-loader.hkvc/x-loadk.bin /mnt/d1/
+	cp -v $ANDPATH/u-boot/u-boot.bin /mnt/d1/
+	cp -v $ANDPATH/u-boot.hkvc/u-bootk.bin /mnt/d1/
+	cp -v $ANDPATH/kernel/arch/arm/boot/uImage /mnt/d1/
+	pushd $ROOTFSPATH
 	echo "Update initrd system if required, else exit"
 	bash
 	find . | cpio -o -H newc | gzip > /tmp/initrd
@@ -114,7 +132,11 @@ if [[ "$mode" == "openocd" ]]; then
 export PATH=/opt/hkvc/openocd/bin:$PATH
 echo "By default openocd provides a telnet server on 4444 and GDB on 3333"
 echo "In gdb> target remote localhost:3333  ---------should allow one to connect using gdb and debug"
-openocd -s /opt/hkvc/openocd/share/openocd/scripts -f interface/xds100v2.cfg -f board/ti_beagleboard_xm.cfg
-
+	if [[ "$DEVICE" == "DEVICE_PANDA" ]]; then
+	openocd -s /opt/hkvc/openocd/share/openocd/scripts -f interface/xds100v2.cfg -f board/ti_pandaboard.cfg
+	else
+	#openocd -s /opt/hkvc/openocd/share/openocd/scripts -f interface/xds100v2.cfg -f board/ti_beagleboard_xm.cfg
+	openocd -s /opt/hkvc/openocd/share/openocd/scripts -f interface/xds100v2.cfg -f board/ti_beagleboard_xm.cfg -c init -c "reset init"
+	fi
 fi
 
