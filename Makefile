@@ -3,7 +3,7 @@
 #
 obj-m += lbhkvc_km_$(DEVICE).o
 lbhkvc_km_$(DEVICE)-objs := lbhkvc_k.o gen_utils.o uart_utils.o
-CFLAGS_lbhkvc_k.o += -D$(DEVICE)
+CFLAGS_lbhkvc_k.o += -D$(DEVICE) -save-temps
 CFLAGS_uart_utils.o += -D$(DEVICE)
 
 #CROSS_COMPILE=arm-linux-gnueabi-
