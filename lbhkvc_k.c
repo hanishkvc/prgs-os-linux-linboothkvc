@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v16Jan2012_2142
+ * v19Jan2012_1452
  * HKVC, GPL, 04Jan2012_2105
  *
  * UPDATE: moving away from cunning/intelligent MVA based cache operations to
@@ -32,6 +32,10 @@
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
 #include <linux/spinlock.h>
+#include <asm/hardware/cache-l2x0.h>
+#include <mach/omap4-common.h>
+#include <plat/omap44xx.h>
+#include <linux/io.h>
 
 #include "gen_utils.h"
 #include "uart_utils.h"
@@ -55,7 +59,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v16Jan2012_2142"
+#define LBHKVC_VERSION "v20Jan2012_0101"
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -105,7 +109,7 @@ void (*kh_cpu_v7_reset)(long) = 0xc00487c0;
 void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc00480f0;
 int (*kh_disable_nonboot_cpus)(void) = 0xc0083674;
 void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc00453d8;
-#else
+#elif defined(DEVICE_BEAGLEXML)
 #warning "************ kh_??? = 0x... For device BEAGLEXM"
 int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = (void*)0xc004e4a4;
 void (*kh_setup_mm_for_reboot)(char mode) = 0xc004ecc8;
@@ -114,6 +118,17 @@ void (*kh_cpu_v7_reset)(long) = 0xc00505a0;
 void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc004ffdc;
 int (*kh_disable_nonboot_cpus)(void) = 0x0;
 void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc004db70;
+#elif defined(DEVICE_PANDA)
+#warning "************ kh_??? = 0x... For device PANDA"
+int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = 0xc003ff7c;
+void (*kh_setup_mm_for_reboot)(char mode) = 0xc00404b4;
+void (*kh_cpu_v7_proc_fin)(void) = 0xc00422e4;
+void (*kh_cpu_v7_reset)(long) = 0xc0042320;
+void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc0041c50;
+int (*kh_disable_nonboot_cpus)(void) = 0xc0076528;
+void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc003ee50;
+#else
+#error "UNKNOWN DEVICE..."
 #endif
 
 
@@ -292,7 +307,11 @@ unsigned long hkvc_mem_touch(void *kva, int len)
 	return lTouch;
 }
 
-/* Identified from kernel/machine_kexec.c and inturn looking at mm/proc-v7.S */
+/* Identified from
+	kernel/machine_kexec.c (for now, most can be and will be replaced with internal code in a future version)
+	mm/proc-v7.S
+	mm/cache-v7.S
+	and lot of others */
 void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsigned long nchildLen)
 {
 	unsigned long lTemp;
@@ -354,6 +373,13 @@ void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
 				unsigned long kpaNChild, unsigned long kvaNChild, unsigned long childLen)
 {
 
+#ifdef CONFIG_CACHE_L2X0
+	void __iomem *myL2CacheBase;
+	myL2CacheBase=ioremap(OMAP44XX_L2CACHE_BASE,SZ_4K);
+	BUG_ON(!myL2CacheBase);
+	printk(KERN_INFO "lbhkvc: l2cache base = 0x%p\n", myL2CacheBase);
+#endif
+
 	printk( KERN_INFO "lbhkvc: get_fs() = 0x%lx AND KERNEL_DS = 0x%lx\n",get_fs(),(unsigned long)KERNEL_DS);
 	hkvc_sleep(0x20000000);
 
@@ -363,7 +389,40 @@ void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
 	set_fs(KERNEL_DS);
 	// The set/way based logic which walks thro multiple cache levels and flushes all cached data which includes
 	// among others the properly resolved/linked kernel module code as well as my Nirvana and NChild code.
+#warning "Executing Set/Way based Cache flush"
 	__cpuc_flush_kern_all();
+#ifdef CONFIG_CACHE_L2X0
+#warning "Executing L2X0 cache flush"
+	__asm__("dsb\n"
+		"dmb\n"
+		"isb\n"
+		"nop\n"
+		"nop\n"
+		"ldr     r0, =0xffff\n"
+		"str     r0, [%0, %2]\n"
+		"2:\n"
+		"ldr     r0, [%0, %2]\n"
+		"cmp     r0, #0\n"
+		"bne     2b\n"
+		"nop\n"
+		"nop\n"
+		"mov     r0, #0x0\n"
+		"str     r0, [%0, %1]\n"
+		"1:\n"
+		"ldr     r0, [%0, %1]\n"
+		"ands    r0, r0, #0x1\n"
+		"bne     1b\n"
+		"nop\n"
+		"nop\n"
+		:
+		: "r"(myL2CacheBase), "J"(L2X0_CACHE_SYNC), "J"(L2X0_CLEAN_INV_WAY)
+		: "r0");
+#else
+#warning "WARN: NO NO NO L2X0 cache flush"
+#endif
+	__cpuc_flush_kern_all();
+	__asm__("dsb\n");
+
 #ifdef OLD_DIRECT_FLUSH_ICACHE_RANGE_LOGIC
 #warning "Executing DIRECT flush_icache_range"
 	flush_icache_range( kvaNirvana, kvaNirvana+PAGE_SIZE); // the MVA based logic which doesn't flush till memory
@@ -470,7 +529,7 @@ static s32 __init lbhkvc_init(void)
 	printk(KERN_INFO "lbhkvc: cpu_possible_map = 0x%lx\n",*cpu_possible_map.bits);
 	printk(KERN_INFO "lbhkvc: cpu_online_map = 0x%lx\n",*cpu_online_map.bits);
 	printk(KERN_INFO "lbhkvc: smp_processor_id = %d\n",smp_processor_id());
-#ifdef DEVICE_NOOKTAB
+#ifndef DEVICE_BEAGLEXM
 	printk(KERN_INFO "lbhkvc: hard_smp_processor_id = %d\n",hard_smp_processor_id());
 #endif
 #ifdef ENABLE_MMU_DISABLE_BEFORELEAVING

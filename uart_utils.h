@@ -15,14 +15,17 @@
 #define ENABLE_INSERTE_ONWAIT 1
 
 #ifdef DEVICE_NOOKTAB
+#warning "UART Port configured for DEVICE_NOOKTAB"
 #define DEBUG_UART_PBASE	0x4806A000
 //#define DEBUG_UART_VBASE	0x4806A000
-#else
-#ifdef DEVICE_BEAGLEXM
+#elif defined(DEVICE_BEAGLEXM)
+#warning "UART Port configured for DEVICE_BEAGLEXM"
 #define DEBUG_UART_PBASE	0x49020000
+#elif (defined(DEVICE_PANDA))
+#warning "UART Port configured for DEVICE_PANDA"
+#define DEBUG_UART_PBASE	0x48020000
 #else
 #error "No VALID DEVICE defined"
-#endif
 #endif
 
 #define TX_BUSY_MASK (UART_LSR_TEMT | UART_LSR_THRE)
