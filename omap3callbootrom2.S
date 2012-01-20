@@ -42,13 +42,22 @@ _start:
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
+
+	# Sync all memory operations till now
 	DSB
 	mov r0,r0
 	mov r0,r0
+
+	# Disable/Mask interrupts, fiqs, and Async Aborts
 	cpsid iaf
 	mov r0,r0
 	ISB
 
+	# Disable MMU
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
 	mrc p15, 0, r7, c1, c0, 0
 	mrc p15, 0, r6, c1, c0, 0
 	mov r0,r0
@@ -62,9 +71,52 @@ _start:
 	mov r0,r0
 	mrc p15, 0, r8, c1, c0, 0
 
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
+
+#if 0
+	# Stop WatchDog Timer 2 (MPU Watchdog) 48314000
+	movw r2,#0x4000
+	movt r2,#0x4831
+	# WSPR - Start Stop register
+	movw r3,#0xAAAA
+	movt r3,#0x0000
+	str r3,[r2, #0x48]
+
+	# WWPS - Write Postings
+1:	ldr r4, [r2, #0x34]
+	cmp r4,#0
+	bne 1b
+
+	movw r3,#0x5555
+	movt r3,#0x0000
+	str r3,[r2, #0x48]
+
+	# WWPS - Write Postings
+1:	ldr r4, [r2, #0x34]
+	cmp r4,#0
+	bne 1b
+
+
+	# WLDR - Load register
+	movw r3,#0x0001
+	movt r3,#0x1111
+	str r3,[r2, #0x2C]
+
+	#WTGR - Trigger register
+	movw r3,#0x1a11
+	movt r3,#0x111a
+	str r3,[r2, #0x30]
+#endif
 
 	mov r0,r0
 	mov r0,r0
+	mov r0,r0
+	mov r0,r0
+
+	# Move NChild to final location
 	lsrs r1, r1, #2
 	add r1, r1, #4
 	movw r2,#0x0800
@@ -77,15 +129,18 @@ moredata:
 	subs r1, r1, #1
 	bne moredata
 
+	# Print 0 to 9 on uart3
 	mov r4,#10
 	ldr r1,uartBase
 	mov r7,#0x30
 msgloop:
 	mov r0,r0
 	mov r0,r0
+	mov r0,r0
+	mov r0,r0
 
 	mov r3,#100
-# This loop waits till tx logic is ready by polling lsr
+	# This loop waits till tx logic is ready by polling lsr, or till 100 times
 1:
 	ldr r2,[r1, #0x14]
 	subs r3,r3,#1
@@ -96,11 +151,6 @@ msgloop:
 	str r7,[r1]
 	add r7, r7, #1
 
-
-	mov r0,r0
-	mov r0,r0
-	mov r0,r0
-	mov r0,r0
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
@@ -108,13 +158,23 @@ msgloop:
 	subs r4,r4,#1
 	bne msgloop
 
+	# Jump to NChild suitably
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
+	mov r0,r0
 #ifdef DEVICE_NOOKTAB
 #error "NOT SUPPORTED CURRENTLY"
 1:
 	b	1b
 #else
-	movw r0,#0x4000
-	movt r0,#0x4001
+	# Use bootrom to jump, Seems to have some issue on Actual h/w to check later
+	#movw r0,#0x4000
+	#movt r0,#0x4001
+
+	# Directly jump to NChild
+	movw r0,#0x0800
+	movt r0,#0x4020
 	mov pc,r0
 #endif
 
