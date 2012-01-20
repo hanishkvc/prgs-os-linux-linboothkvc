@@ -3,8 +3,9 @@
 # HKVC, GPL, Jan2012
 #
 
-DEVICE=DEVICE_BEAGLEXM
-#DEVICE=DEVICE_NOOKTAB
+#DEVICE=DEVICE_BEAGLEXM
+DEVICE=DEVICE_NOOKTAB
+#DEVICE=DEVICE_PANDA
 
 LOCATION=HOME
 #LOCATION=OTHER1
@@ -37,6 +38,12 @@ if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
 	KERN_SYMS=.target_kallsyms
 fi
 
+if [[ $DEVICE == "DEVICE_PANDA" ]]; then
+	KERPATH=/hanishkvc/external/PandaBoard/omapzoom.org/kernel
+	CGCC=arm-eabi-
+	KERN_SYMS=$KERPATH/System.map
+fi
+
 
 echo "Using KERNEL_DIR: $KERPATH"
 echo "Remember to do atleast on kernel source"
@@ -49,7 +56,9 @@ if [[ $1 == "clean" ]]; then
 
 make KERNEL_DIR=$KERPATH ARCH=arm CROSS_COMPILE=$CGCC clean
 
-elif [[ $1 == "check" ]]; then
+fi
+
+if [[ $1 == "check" ]]; then
 
 if [[ "$DEVICE" == "DEVICE_NOOKTAB" ]]; then
 	adb shell cat /proc/kallsyms > $KERN_SYMS
@@ -57,6 +66,7 @@ fi
 
 cat lbhkvc_k.c | grep "kh_" | grep "= 0x"
 ls $KERN_SYMS
+cat $KERN_SYMS | grep "ioremap_page"
 cat $KERN_SYMS | grep "setup_mm_for_reboot"
 cat $KERN_SYMS | grep "cpu_v7_proc_fin"
 cat $KERN_SYMS | grep "cpu_v7_reset"
@@ -64,30 +74,45 @@ cat $KERN_SYMS | grep "v7_coherent_kern_range"
 cat $KERN_SYMS | grep "disable_nonboot_cpus"
 cat $KERN_SYMS | grep "show_pte"
 
-elif [[ $1 == "asm" ]]; then
+fi
+
+if [[ $1 == "asm" ]] || [[ $1 == "quick" ]]; then
 	rm nirvana1.S
 	if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
-	ln -s call1.S nirvana1.S
+	ln -s OmapNirvana1.S nirvana1.S
 	else
-	ln -s omap3callbootrom2.S nirvana1.S
+	ln -s OmapNirvana1.S nirvana1.S
 	fi
 	make DEVICE=$DEVICE asm
+	read -p "Hope everythin is fine with asm ..."
+fi
 
-elif [[ $1 == "nchild" ]]; then
-	cp misc/Binaries/HKVC-x-load.bin hkvc.nchild.bin
+if [[ $1 == "nchild" ]] || [[ $1 == "quick" ]]; then
+	if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
+	cp -v $KERPATH/../../x-loader.hkvc/x-loadk.bin misc/Binaries/HKVC-$DEVICE-x-loadk.bin
+	else
+	cp -v $KERPATH/../x-loader.hkvc/x-loadk.bin misc/Binaries/HKVC-$DEVICE-x-loadk.bin
+	fi
+	cp -v misc/Binaries/HKVC-$DEVICE-x-loadk.bin hkvc.$DEVICE.nchild.bin
+	rm hkvc.nchild.bin
+	ln -s hkvc.$DEVICE.nchild.bin hkvc.nchild.bin
 	make DEVICE=$DEVICE nchild
+	read -p "Hope everythin is fine with nchild ..."
+fi
 
-elif [[ $1 == "install" ]]; then
+if [[ $1 == "install" ]]; then
 	DEVICE=$DEVICE ./install.sh
+fi
 
-elif [[ $1 == "uuencode" ]]; then
+if [[ $1 == "uuencode" ]]; then
 uuencode lbhkvc_km_$DEVICE.ko lbhkvc_km_$DEVICE.ko > lbhkvc_km.ko.uu
 mv lbhkvc_km.ko.uu /tmp/send.uu
 echo "On target use busybox rx recv.uu "
 echo "On PC send send.uu using minicom's xmodem protocol"
 echo "followed by busybox uudecode recv.uu on target"
+fi
 
-else
+if [[ $1 == "module" ]] || [[ $1 == "quick" ]]; then
 
 make KERNEL_DIR=$KERPATH ARCH=arm CROSS_COMPILE=$CGCC DEVICE=$DEVICE all
 
