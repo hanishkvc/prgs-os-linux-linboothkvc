@@ -12,7 +12,8 @@
 #define _HKVC_UART_UTILS_
 
 
-#define ENABLE_INSERTE_ONWAIT 1
+//#define ENABLE_INSERTE_ONWAIT 1
+#undef ENABLE_INSERTE_ONWAIT
 
 #ifdef DEVICE_NOOKTAB
 #warning "UART Port configured for DEVICE_NOOKTAB"

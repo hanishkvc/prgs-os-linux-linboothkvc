@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v19Jan2012_1452
+ * v22Jan2012_1159
  * HKVC, GPL, 04Jan2012_2105
  *
  * UPDATE: moving away from cunning/intelligent MVA based cache operations to
@@ -59,7 +59,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v20Jan2012_0101"
+#define LBHKVC_VERSION "v22Jan2012_1309-"__TIME__
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -109,7 +109,7 @@ void (*kh_cpu_v7_reset)(long) = 0xc00487c0;
 void (*kh_v7_coherent_kern_range)(unsigned long, unsigned long) = 0xc00480f0;
 int (*kh_disable_nonboot_cpus)(void) = 0xc0083674;
 void (*kh_show_pte)(struct mm_struct *mm, unsigned long addr) = 0xc00453d8;
-#elif defined(DEVICE_BEAGLEXML)
+#elif defined(DEVICE_BEAGLEXM)
 #warning "************ kh_??? = 0x... For device BEAGLEXM"
 int (*kh_ioremap_page)(unsigned long, unsigned long, void *) = (void*)0xc004e4a4;
 void (*kh_setup_mm_for_reboot)(char mode) = 0xc004ecc8;
@@ -307,6 +307,15 @@ unsigned long hkvc_mem_touch(void *kva, int len)
 	return lTouch;
 }
 
+void print_v2p_mapping(char *sMsg, int iMsgLen, unsigned long addr)
+{
+	hkvc_uart_send(sMsg,iMsgLen);
+	hkvc_uart_send_hex(addr);
+	hkvc_uart_send(" v2p ",5);
+	hkvc_uart_send_hex(va2pa_cpr(addr));
+	hkvc_uart_send("\n\r",2);
+}
+
 /* Identified from
 	kernel/machine_kexec.c (for now, most can be and will be replaced with internal code in a future version)
 	mm/proc-v7.S
@@ -323,16 +332,31 @@ void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsig
 	__asm__("ISB \n");
 	kh_cpu_v7_proc_fin();
 	__asm__("ISB \n");
-	__asm__("MCR p15, 0, r0, c7, c5, 0 \n");
+	/* ICIALLU, Instruction cache invalidate all to PoU. Ignores Rt value.
+	__asm__("MCR p15, 0, r0, c7, c5, 0 \n"); */
 	hkvc_uart_send("A2ProcFin\n",10);
+
+	print_v2p_mapping("kpaNirvana: ",12,kpaNirvana);
+	print_v2p_mapping("kpaNChild : ",12,kpaNChild);
+	print_v2p_mapping("NChildELoc: ",12,0x40304350);
+
 	kh_setup_mm_for_reboot(0);
 	__asm__("DSB \n");
 	__asm__("ISB \n");
 	hkvc_uart_send("A3SetupMm\n",10);
+
+	print_v2p_mapping("kpaNirvana: ",12,kpaNirvana);
+	print_v2p_mapping("kpaNChild : ",12,kpaNChild);
+	print_v2p_mapping("NChildELoc: ",12,0x40304350);
+	//hkvc_uart_send("\n\r",2);
+
 	__asm__("mrc p15, 0, %0, c1, c0, 0\n"
 		:"=r"(lTemp)
 		);
 	hkvc_uart_send_hex(lTemp);
+	hkvc_uart_send("\n\r",2);
+	hkvc_uart_send_hex(lTemp);
+	hkvc_uart_send("\n\r",2);
 	//kh_cpu_v7_reset(kpaNirvana);
 	__asm__ ("mov r0,r0\n"
 		 "mov r0,r0\n"

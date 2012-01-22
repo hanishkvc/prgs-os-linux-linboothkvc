@@ -1,8 +1,71 @@
 Readme - linboothkvc
-v16Jan2012_2204
+v22Jan2012_0015
 HKVC, GPL
 A linux kernel module based bootstrap loader
 ----------------------------------------------
+
+>> 22Jan2012_0015 <<
+
+The following had to be disabled/bypassed in x-loader to get it running in
+linboothkvc Nirvana environment
+
+a) Disabling majority of use of memory around 0x4030.xxxx
+   - None of them affect x-loader functionality
+   - To take care of few of the required functionality the load address for
+     X-loader was changed to 0x8000.7ff0 in place of 0x4030.4350
+   - Area corresponding to STACK offset in this memory didn't create any
+     problem.
+b) Setting up MPU and IVA dpll clocks
+   - Doesn't affect x-loader functionality directly
+   Haven't checked at linux kernel level yet, but don't see a reason why
+   it should affect.
+   Not sure if we running from DDR memory created problem for this as there
+   is a possibility that DDR memory clock is derived from these clocks. I
+   haven't looked at the Clock hierarchy of Omap4 currently.
+c) initialisation of DDR
+   - Again doesn't affect, we are already running in DDR. Also because
+   we are already running in DDR memory, trying reinitialising could have
+   potentially created the problem.
+d) Call to smc to enable L2 (PL310) cache
+   - Again doesn't affect x-loader directly
+e) Few cross check calls to SEC_ENTRY_Std_Ppa_Call
+   - Doesn't affect directly
+
+NOTE1: It expects the u-boot.bin to be called u-bootk.bin in MMC/SD.
+NOTE2: It expects dummy data of 0x120 prepended to actual u-boot.bin file
+       when creating the u-bootk.bin
+
+HOWEVER what I have found is that the x-loader provided by BN(from Ti) is
+very severly limited wrt handling MMC devices in NON RAW MODE. so currently
+if you use the one bundled as NChild in linboothkvc or from BN source dump
+it won't load the u-bootk.bin.
+
+I will look at patching this up in next few days. Now this is a thing which
+I hadn't originally expected, not that it is complicated or something like
+that, it is pretty straight forward, but it does require some time to be
+spent on it, which I hadn't originally planned for. Also may be using the
+latest Ti x-loader for Omap4 could turn out to be the short cut for myself
+or anyone else interested in experimenting.
+
+>> 21Jan2012_0125 <<
+
+No additional changes required on Omap4/Nooktab compared to Omap3/Beagle at a
+fundamental level.
+
+However on NookTab the SRAM at 0x4030.xxxx (Rather as of now I have tried only
+0x4030.4350 - the x-loader default load address) seems to be locked out by HS
+or I am doing something wrong, which I have to cross check later.
+
+Also in the interim, I implemented logic for L2X0 cache flush and using the
+ARM CP15 Address translation support instruction. Because of the 0x4030.xxxx
+address issue, which I didn't realise initially, even thou it was in front
+of my eye, because I did the cardinal sin of adding/changing too many things
+in one shot before testing on the target.
+
+Also the x-loader for omap4 (haven't cross checked this particular part on Omap3
+recently, but don't remember it having this argument passed thro r0 logic.)
+expects a meta data structure to be passed thro R0 register which gives it
+info wrt boot device and boot mode. So one has to patch x-loader appropriately.
 
 >> 16Jan2012_2154 <<
 :-) SUCCESS ON a Actual HARDWARE :-) (not _the_ h/w yet ;-)

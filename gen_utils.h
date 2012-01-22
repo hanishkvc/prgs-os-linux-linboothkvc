@@ -9,6 +9,8 @@
 #define _HKVC_GEN_UTILS_
 
 void hkvc_sleep(unsigned long cnt);
+unsigned long va2pa_cpr(unsigned long vAddr);
+unsigned long va2pa_cur(unsigned long vAddr);
 
 #endif
 

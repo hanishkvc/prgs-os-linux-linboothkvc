@@ -1,5 +1,5 @@
-# HKVCs simple OmapNirvana1 for linboothkvc checking
-# v17Jan2012_2254
+# HKVCs simple OmapNirvana3 for linboothkvc checking
+# v22Jan2012_1307
 # HKVC, GPL, 05Jan2012_2049
 #
 # This version successfully loads a new linux kernel and
@@ -9,21 +9,22 @@
 # or something else. It is only that I by default use a
 # x-load.bin.
 #
-# This also prints to uart.
-# And disable MMU and sync data and instruction operations
-# This also takes care of setting the uart base address
-# based on currently selected device.
+# This also prints to uart to help debug.
 # The Maskbits in CPSR related to Interrupt, FIQ and Async
 # abort is also handled.
-# It has been found that the bootrom (atleast in qemu for now)
-# expects the code to run be already loaded at 0x4020.0800
-# This version copies the passed NirvanaChild code from the
-# new version of lbhkvc_km.do to 0x4020.0800 and then
-# jumps to it.
+# It disables MMU and syncs data and instruction operations
+# This also takes care of setting the uart base address
+# based on currently selected device.
+# The version copies the passed NirvanaChild code to the
+# required destination location based on device selected
+# and passes control to it after appropriately handling
+# required stuff.
 #
-# This prints a shorter run of 0 to 9 and then calls
-# into boot rom. Being in Nirvana code for too long seems to
-# trigger a watchdog or so ..., have to check later.
+# Compared to OmapNirvana2.S, I have removed the writing
+# to uartVBase got by ioremap in linboothkvc kernel module
+# because it is not required currently and also because
+# I had hardcoded the uartVBase address rather than getting
+# it has a argument or patched into the Nirvana code.
 #
 
 #
@@ -42,29 +43,26 @@ _start:
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
-	ldr r9,uartVBase
+
 	ldr r10,uartBase
-	mov r8,#0x35
-	str r8,[r9]
-	str r8,[r10]
+	mov r11,#0x35
+	str r11,[r10]
 
 	# Sync all memory operations till now
 	DSB
 	mov r0,r0
 	mov r0,r0
 
-	mov r8,#0x34
-	str r8,[r9]
-	str r8,[r10]
+	mov r11,#0x34
+	str r11,[r10]
 
 	# Disable/Mask interrupts, fiqs, and Async Aborts
 	cpsid iaf
 	mov r0,r0
 	ISB
 
-	mov r8,#0x33
-	str r8,[r9]
-	str r8,[r10]
+	mov r11,#0x33
+	str r11,[r10]
 
 	# Disable MMU
 	mov r0,r0
@@ -87,11 +85,9 @@ _start:
 	# writing to the virtual address will raise a exception, which we aren't currently
 	# handling, so it will NUKE the Nirvana env.
 	# THATS why I no longer write to [r9] below
-	mov r8,#0x32
-	str r8,[r10]
-	#str r8,[r9]
-	str r8,[r10]
-	#str r8,[r9]
+	mov r11,#0x32
+	str r11,[r10]
+
 	mrc p15, 0, r8, c1, c0, 0
 
 	mov r0,r0
@@ -106,6 +102,13 @@ _start:
 	# This is for BeagleXM
 
 #if 0
+	# Note Watchdog timer is disabled in most of the
+	# targets that I have checked. So the below code
+	# is not required. Also we will require to enable
+	# the clocks to the watchdog module before accessing
+	# them. Otherwise it will rise a excepton which
+	# we are not currently trapping (some Amruth required)
+	#
 	# Stop WatchDog Timer 2 (MPU Watchdog) 48314000
 	movw r2,#0x4000
 	movt r2,#0x4831
@@ -154,24 +157,22 @@ _start:
 	movw r2,#0x4350
 	movt r2,#0x4030
 #elif defined(DEVICE_NOOKTAB)
-	movw r2,#0x8000
+	# Note that in NookTAB may be because of HS nature,
+	# may be 40304350 and around is used by HS code
+	# writing to 0x4030.4350 triggers a exception potentially,
+	# have to debug later
+	movw r2,#0x7ff0
 	movt r2,#0x8000
-	mov r8,#0x35
-	str r8,[r10]
 #else
 	# This is for Omap3 (Omap3[4|6]30, Dm3730,....)
 	movw r2,#0x0800
 	movt r2,#0x4020
 #endif
+	mov r11,#0x31
+	str r11,[r10]
 moredata:
-	mov r8,#0x34
-	str r8,[r10]
 	ldr r3,[r0]
-	mov r8,#0x33
-	str r8,[r10]
 	str r3,[r2]
-	mov r8,#0x32
-	str r8,[r10]
 	add r0, r0, #4
 	add r2, r2, #4
 	subs r1, r1, #1
@@ -211,11 +212,23 @@ msgloop:
 	mov r0,r0
 	mov r0,r0
 	mov r0,r0
-#if (defined(DEVICE_NOOKTAB) || defined(DEVICE_PANDA))
-#warning "NOT SUPPORTED CURRENTLY"
+
+#if defined(DEVICE_NOOKTAB)
+	# Base address of memory containing metadata
+	movw r0,#0x7ff0
+	movt r0,#0x8000
+#elif defined(DEVICE_PANDA)
 	# Base address of memory containing metadata
 	movw r0,#0x4350
 	movt r0,#0x4030
+#endif
+
+#if (defined(DEVICE_NOOKTAB) || defined(DEVICE_PANDA))
+	# The below arguments being passed to NChild
+	# assumes that Ti's x-loader is used.
+	# Also I use a modified x-loader which simplifies
+	# the argument parsing/structure.
+	#
 	# Boot device ==> 0x05 = MMC/SD1
 	mov  r1,#0x05
 	str  r1,[r0,#0x08]
@@ -235,9 +248,6 @@ msgloop:
 	movt r0,#0x4020
 	mov pc,r0
 #endif
-
-uartVBase:
-	.long 0xfa06a000
 
 uartBase:
 #ifdef DEVICE_NOOKTAB

@@ -12,9 +12,10 @@ echo "Files being copied..."
 cp -v *.* $rdir/
 cp -v Makefile $rdir/
 cp -v README* $rdir/
+cp -v -a ../release $rdir/
 
 if [[ $1 != "internal" ]]; then
-echo "INFO: EXTERNAL release - Shorten Developer full name..."
+read -p "INFO: EXTERNAL release - Shorten Developer full name..."
 cd $rdir
 for i in *; do
 	echo $i
@@ -30,7 +31,7 @@ rm -rf release.sh
 grep -i "hanis" * | less
 cd ..
 else
-echo "INFO: INTERNAL release - Developer full name not shortened"
+read -p "INFO: INTERNAL release - Developer full name not shortened"
 fi
 
 zip -r $rdir.zip $rdir

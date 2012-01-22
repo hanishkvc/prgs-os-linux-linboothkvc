@@ -3,15 +3,27 @@
 # HKVC, GPL, Jan2012
 #
 
-#DEVICE=DEVICE_BEAGLEXM
-DEVICE=DEVICE_NOOKTAB
-#DEVICE=DEVICE_PANDA
-
 LOCATION=HOME
 #LOCATION=OTHER1
 
+if [[ "$1" != "" ]]; then
+CMD=$1
+else
+CMD="module"
+fi
+
+if [[ "$2" == "" ]]; then
+#DEVICE=DEVICE_BEAGLEXM
+DEVICE=DEVICE_NOOKTAB
+#DEVICE=DEVICE_PANDA
+else
+DEVICE=$2
+fi
+
+
 echo "DEVICE: " $DEVICE
 echo "LOCATION: " $LOCATION
+echo "CMD: " $CMD
 read -p "Hope this is fine..."
 
 if [[ $DEVICE == "DEVICE_BEAGLEXM" ]]; then
@@ -52,13 +64,13 @@ echo "make CROSS_COMPILE=arm-eabi- ARCH=arm oldconfig"
 echo "make CROSS_COMPILE=arm-eabi- ARCH=arm scripts"
 read -p "Press any key ..."
 
-if [[ $1 == "clean" ]]; then
+if [[ $CMD == "clean" ]]; then
 
 make KERNEL_DIR=$KERPATH ARCH=arm CROSS_COMPILE=$CGCC clean
 
 fi
 
-if [[ $1 == "check" ]]; then
+if [[ $CMD == "check" ]]; then
 
 if [[ "$DEVICE" == "DEVICE_NOOKTAB" ]]; then
 	adb shell cat /proc/kallsyms > $KERN_SYMS
@@ -76,18 +88,18 @@ cat $KERN_SYMS | grep "show_pte"
 
 fi
 
-if [[ $1 == "asm" ]] || [[ $1 == "quick" ]]; then
+if [[ $CMD == "asm" ]] || [[ $CMD == "quick" ]]; then
 	rm nirvana1.S
 	if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
-	ln -s OmapNirvana1.S nirvana1.S
+	ln -s OmapNirvana3.S nirvana1.S
 	else
-	ln -s OmapNirvana1.S nirvana1.S
+	ln -s OmapNirvana3.S nirvana1.S
 	fi
 	make DEVICE=$DEVICE asm
 	read -p "Hope everythin is fine with asm ..."
 fi
 
-if [[ $1 == "nchild" ]] || [[ $1 == "quick" ]]; then
+if [[ $CMD == "nchild" ]] || [[ $CMD == "quick" ]]; then
 	if [[ $DEVICE == "DEVICE_NOOKTAB" ]]; then
 	cp -v $KERPATH/../../x-loader.hkvc/x-loadk.bin misc/Binaries/HKVC-$DEVICE-x-loadk.bin
 	else
@@ -100,21 +112,21 @@ if [[ $1 == "nchild" ]] || [[ $1 == "quick" ]]; then
 	read -p "Hope everythin is fine with nchild ..."
 fi
 
-if [[ $1 == "install" ]]; then
+if [[ $CMD == "install" ]]; then
 	DEVICE=$DEVICE ./install.sh
 fi
 
-if [[ $1 == "uuencode" ]]; then
-uuencode lbhkvc_km_$DEVICE.ko lbhkvc_km_$DEVICE.ko > lbhkvc_km.ko.uu
-mv lbhkvc_km.ko.uu /tmp/send.uu
-echo "On target use busybox rx recv.uu "
-echo "On PC send send.uu using minicom's xmodem protocol"
-echo "followed by busybox uudecode recv.uu on target"
-fi
-
-if [[ $1 == "module" ]] || [[ $1 == "quick" ]]; then
+if [[ $CMD == "module" ]] || [[ $CMD == "quick" ]]; then
 
 make KERNEL_DIR=$KERPATH ARCH=arm CROSS_COMPILE=$CGCC DEVICE=$DEVICE all
 
+fi
+
+if [[ $CMD == "uuencode" ]] || [[ $CMD == "quick" ]]; then
+uuencode lbhkvc_km_$DEVICE.ko lbhkvc_km_$DEVICE.ko > lbhkvc_km.ko.uu
+mv -v lbhkvc_km.ko.uu /tmp/send.uu
+echo "On target use busybox rx recv.uu "
+echo "On PC send send.uu using minicom's xmodem protocol"
+echo "followed by busybox uudecode recv.uu on target"
 fi
 

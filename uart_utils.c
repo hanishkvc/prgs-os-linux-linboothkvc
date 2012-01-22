@@ -28,6 +28,7 @@ void hkvc_uart_init(void)
 void hkvc_uart_wait_on_tx_busy(void)
 {
 	int cnt = 0;
+	hkvc_sleep(0x200);
 	while(readw(uartPort+HKVC_UART_LSR) & TX_BUSY_MASK) {
 #ifdef ENABLE_INSERTE_ONWAIT
 		if(cnt == UARTWAIT_INSERTECNT) {
@@ -57,6 +58,7 @@ void hkvc_uart_send(char *buf, int len)
 	}
 	hkvc_uart_wait_on_tx_busy();
 	writew(curIER,uartPort+HKVC_UART_IER);
+	hkvc_sleep(0x400);
 }
 
 static char tBin2Hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F' };
