@@ -4,6 +4,47 @@ HKVC, GPL
 A linux kernel module based bootstrap loader
 ----------------------------------------------
 
+>> 24Jan2012 <<
+Found the -save-temps effect on kernel module compilation visible in
+kernel source directory. I was expecting in kernel module diretory
+but still it helps. I had given up hope on getting access to inter
+midiate files, but now I have access to them, if and when required.
+
+The Virtual uart addresses which I had hardcoded in OmapNirvana2.S
+even thou allocated using ioremap, actuall get mapped the same always
+because there is a default mdesc.map_io based hardwired mapping for
+io, which is setup. However in OmapNirvana3.S I have removed the
+writing to Virtual uart addr, because what I wanted to debug using
+it is already achieved. However with this knowledge, if required I
+can go back to using these hardcoded virtual addresses for uart
+as long as the mach-omap2/io.c mappings don't change.
+
+>> 22Jan2012_2300 <<
+
+linux-kernel
+--------------
+The zImage entry point which decompresses the kernel, relocates it
+and sets up cache is working properly.
+
+However after it jumps to stext using call_kernel, some where beyond
+this point the kernel is failing (May be some SMC call for L2 cache
+related stuff or some such thing, I have to debug this more later).
+
+UPDATE: 24Jan2012_1757: Rather in linboothkvc environment, the kernel
+fails in lookup_processor_type in arch/arm/kernel/head.S(head_common.S)
+
+u-boot
+---------
+
+At one level u-boot works directly off the shelve in the linboothkvc
+environment from x-loader. However to get good use of it
+
+a) All the SMC calls require to be bypassed.
+b) It doesn't implement the bootm command, will require to implement
+   it if required.
+c) some other cleanups and updates wrt env variables for u-boot env
+   etc.
+
 >> 22Jan2012_0015 <<
 
 The following had to be disabled/bypassed in x-loader to get it running in
@@ -46,6 +87,12 @@ that, it is pretty straight forward, but it does require some time to be
 spent on it, which I hadn't originally planned for. Also may be using the
 latest Ti x-loader for Omap4 could turn out to be the short cut for myself
 or anyone else interested in experimenting.
+
+UPDATE: Rather even thou the x-loader from BN doesn't have all the latest
+u-boot features or even some of the x-loader features. Still it has basic
+support for loading files from a fat filesystem with certain assumptions
+like it will only work with the 1st partition on a MBR based SD card and
+few other minor issues. But that in itself is good enough.
 
 >> 21Jan2012_0125 <<
 
