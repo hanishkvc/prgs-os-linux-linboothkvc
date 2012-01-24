@@ -1,23 +1,47 @@
 Readme - linboothkvc
-v22Jan2012_0015
+v24Jan2012_1953
 HKVC, GPL
 A linux kernel module based bootstrap loader
 ----------------------------------------------
 
->> 24Jan2012 <<
-Found the -save-temps effect on kernel module compilation visible in
-kernel source directory. I was expecting in kernel module diretory
-but still it helps. I had given up hope on getting access to inter
-midiate files, but now I have access to them, if and when required.
+>> 24Jan2012_2113 <<
+
+REALITY BITES BACK - I had a known thing/issue, which I had set aside
+for now/then(v1.0 release) with a wish full thinking that as I had
+fully flushed the Caches just shortly before disabling the Caches,
+there is not much need to re flush the cache (i.e clean and invalidate)
+again (Even thou I had the lingering feeling to call it again, but was
+lazy as usual and also on BeagleBoard and Pandaboard it worked with out
+a flaw, so took a chance). However on NookTab once I used more memory
+entering into linux kernel and ramdisk in the linboothkvc Nirvana
+environment, the reality bite back hard at me, with even the
+proc_info_list itself not being read properly and thus
+__lookup_processor_type failing in kernel. So I went back and enabled
+additional flushing after the Cache disable in Proc_Finish and viola,
+the kernel is very much more alive know :-) on NookTab, except for
+some small love here and there, which I am sure lot of people will
+be able to fix easily.
+
+Found that the -save-temps flags effect on kernel module compilation is
+actually visible in kernel source directory. I was originally expecting
+to see its effect of intermidiate files in kernel module diretory.
+I had given up hope on getting access to intermidiate files, and used
+other methods to pin point the compilation issues, but now I have access
+to them, if and when required in future.
 
 The Virtual uart addresses which I had hardcoded in OmapNirvana2.S
 even thou allocated using ioremap, actuall get mapped the same always
 because there is a default mdesc.map_io based hardwired mapping for
-io, which is setup. However in OmapNirvana3.S I have removed the
-writing to Virtual uart addr, because what I wanted to debug using
-it is already achieved. However with this knowledge, if required I
-can go back to using these hardcoded virtual addresses for uart
-as long as the mach-omap2/io.c mappings don't change.
+io, which is setup during kernel booting. However in OmapNirvana3.S
+I have removed the writing to Virtual uart addr, because what I wanted
+to debug using it is already achieved. However with this knowledge,
+if required I can go back to using these hardcoded virtual addresses
+for uart as long as the mach-omap2/io.c mappings don't change.
+
+Also scripts/setlocalversion in linux kernel source may require
+patching if you want to use git with the BN source and still use
+the same source with changes between kernel build and module
+builds. Just a note to myself.
 
 >> 22Jan2012_2300 <<
 

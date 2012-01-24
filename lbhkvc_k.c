@@ -1,6 +1,6 @@
 /*
  * linuxboothkvc_kernel.c
- * v22Jan2012_1159
+ * v24Jan2012_1943
  * HKVC, GPL, 04Jan2012_2105
  *
  * UPDATE: moving away from cunning/intelligent MVA based cache operations to
@@ -59,7 +59,7 @@
 #define RSRVD_PHYS_ADDR1	0x9C000000 /* picked from fwram */
 #define RSRVD_PHYS_ADDR2	0x9CF00000 /* Ducati baseimage physical address */
 #define LBHKVC_MINOR 100
-#define LBHKVC_VERSION "v22Jan2012_1309-"__TIME__
+#define LBHKVC_VERSION "v24Jan2012_1942-"__TIME__
 
 static DEFINE_SPINLOCK(main_lock);
 
@@ -316,6 +316,8 @@ void print_v2p_mapping(char *sMsg, int iMsgLen, unsigned long addr)
 	hkvc_uart_send("\n\r",2);
 }
 
+void hkvc_flush_all(void);
+
 /* Identified from
 	kernel/machine_kexec.c (for now, most can be and will be replaced with internal code in a future version)
 	mm/proc-v7.S
@@ -332,9 +334,10 @@ void hkvc_kexec_minimal(unsigned long kpaNirvana, unsigned long kpaNChild, unsig
 	__asm__("ISB \n");
 	kh_cpu_v7_proc_fin();
 	__asm__("ISB \n");
-	/* ICIALLU, Instruction cache invalidate all to PoU. Ignores Rt value.
-	__asm__("MCR p15, 0, r0, c7, c5, 0 \n"); */
+	/* ICIALLU, Instruction cache invalidate all to PoU. Ignores Rt value. */
+	__asm__("MCR p15, 0, r0, c7, c5, 0 \n");
 	hkvc_uart_send("A2ProcFin\n",10);
+	hkvc_flush_all();
 
 	print_v2p_mapping("kpaNirvana: ",12,kpaNirvana);
 	print_v2p_mapping("kpaNChild : ",12,kpaNChild);
@@ -393,12 +396,13 @@ void (*test_end_code)(void) = (void*) 0x0;
 
 #endif
 
-void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana, 
-				unsigned long kpaNChild, unsigned long kvaNChild, unsigned long childLen)
-{
-
 #ifdef CONFIG_CACHE_L2X0
-	void __iomem *myL2CacheBase;
+void __iomem *myL2CacheBase = NULL;
+#endif
+
+void hkvc_flush_init(void)
+{
+#ifdef CONFIG_CACHE_L2X0
 	myL2CacheBase=ioremap(OMAP44XX_L2CACHE_BASE,SZ_4K);
 	BUG_ON(!myL2CacheBase);
 	printk(KERN_INFO "lbhkvc: l2cache base = 0x%p\n", myL2CacheBase);
@@ -413,6 +417,10 @@ void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
 	set_fs(KERNEL_DS);
 	// The set/way based logic which walks thro multiple cache levels and flushes all cached data which includes
 	// among others the properly resolved/linked kernel module code as well as my Nirvana and NChild code.
+}
+
+void hkvc_flush_all(void)
+{
 #warning "Executing Set/Way based Cache flush"
 	__cpuc_flush_kern_all();
 #ifdef CONFIG_CACHE_L2X0
@@ -446,6 +454,15 @@ void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
 #endif
 	__cpuc_flush_kern_all();
 	__asm__("dsb\n");
+
+}
+
+void hkvc_kexec_minimal_ext(unsigned long kpaNirvana, unsigned long kvaNirvana,
+				unsigned long kpaNChild, unsigned long kvaNChild, unsigned long childLen)
+{
+
+	hkvc_flush_init();
+	hkvc_flush_all();
 
 #ifdef OLD_DIRECT_FLUSH_ICACHE_RANGE_LOGIC
 #warning "Executing DIRECT flush_icache_range"
