@@ -12,15 +12,22 @@ fully flushed the Caches just shortly before disabling the Caches,
 there is not much need to re flush the cache (i.e clean and invalidate)
 again (Even thou I had the lingering feeling to call it again, but was
 lazy as usual and also on BeagleBoard and Pandaboard it worked with out
-a flaw, so took a chance). However on NookTab once I used more memory
-entering into linux kernel and ramdisk in the linboothkvc Nirvana
-environment, the reality bite back hard at me, with even the
-proc_info_list itself not being read properly and thus
-__lookup_processor_type failing in kernel. So I went back and enabled
-additional flushing after the Cache disable in Proc_Finish and viola,
-the kernel is very much more alive know :-) on NookTab, except for
-some small love here and there, which I am sure lot of people will
-be able to fix easily.
+a flaw, so took a chance). Also ideally the code which re-enables the
+Cache like the new linux kernel or what ever else in the Nirvana
+environment should take care of doing a thorought cache invalidate
+before actually enabling the Cache again. With those thoughts and
+lazyness I had left calling the flush again after disable.
+
+However on NookTab once I used more memory entering into linux kernel
+and ramdisk in the linboothkvc Nirvana environment, the reality bite
+back hard at me, with even the proc_info_list itself not being read
+properly and thus __lookup_processor_type failing in kernel. So I
+went back and enabled additional flushing after the Cache disable in
+Proc_Finish and viola, the kernel is very much more alive know :-)
+on NookTab, except for some small love here and there. So now with
+LinBootHKVC on NookTab, a lot more people can successfully experiment
+and get a live and kicking linux kernel up and running happily with
+out much difficulty.
 
 Found that the -save-temps flags effect on kernel module compilation is
 actually visible in kernel source directory. I was originally expecting
