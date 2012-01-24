@@ -29,6 +29,11 @@ LinBootHKVC on NookTab, a lot more people can successfully experiment
 and get a live and kicking linux kernel up and running happily with
 out much difficulty.
 
+So put differently atleast in android linux 2.6.35 source there is
+some issue/corner case with thorough cache invalidation before cache
+gets enabled or before it does anything significant. However now it
+is taken care of while disabling itself, which is also a good thing.
+
 Found that the -save-temps flags effect on kernel module compilation is
 actually visible in kernel source directory. I was originally expecting
 to see its effect of intermidiate files in kernel module diretory.
